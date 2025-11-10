@@ -3283,7 +3283,7 @@ BBPSCRAPER() {
         return
     fi
 
-    pipx install --force git+https://github.com/rix4uni/bbpscraper.git &>/dev/null
+    gocl -i github.com/rix4uni/bbpscraper &>/dev/null
 
     if ! command -v bbpscraper &>/dev/null; then
         echo -e "${BRED}[x] BBPSCRAPER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
