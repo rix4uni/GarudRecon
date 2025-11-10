@@ -250,41 +250,15 @@ UNEWFLUSH() {
 # PACKAGES
 PACKAGES() {
     START_SPINNER "${BGREEN}PACKAGES${RESET}"
-    sudo sed -i 's|http://mirrors.digitalocean.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list &>/dev/null
-    sudo sed -i 's|http://mirrors.digitalocean.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources &>/dev/null
     apt --fix-broken install -y &>/dev/null
     dpkg --configure -a &>/dev/null
     apt update -y &>/dev/null
     # apt upgrade -y &>/dev/null
-    apt install -y autoconf automake libtool build-essential libssl-dev libpcre3-dev libpcap-dev rsync net-tools dmidecode &>/dev/null
+    apt install -y autoconf automake libtool build-essential libssl-dev libpcre3-dev libpcap-dev rsync net-tools dmidecode python3 libudev-dev gcc git sshpass curl dos2unix wget zip xsel jq npm chromium chromium-browser cmake poppler-utils parallel cewl python3-shodan &>/dev/null
     wget -q https://raw.githubusercontent.com/rix4uni/dotfiles/refs/heads/main/tmux/tmux-termius.conf -O ~/.tmux.conf
-
-    # https://stackoverflow.com/questions/75602063/pip-install-r-requirements-txt-is-failing-this-environment-is-externally-mana
-    rm -rf /usr/lib/python3.*/EXTERNALLY-MANAGED &>/dev/null
 
     STOP_SPINNER
     echo -e "${BGREEN}[+] PACKAGES - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-PYTHON3() {
-    START_SPINNER "${BGREEN}PYTHON3${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v python3 &>/dev/null; then
-        echo -e "${YELLOW}[~] PYTHON3 - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install python3 -y &>/dev/null
-
-    if ! command -v python3 &>/dev/null; then
-        echo -e "${BRED}[x] PYTHON3 - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] PYTHON3 - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 PIP3() {
@@ -317,48 +291,6 @@ SETUPTOOLS() {
     echo -e "${BGREEN}[+] SETUPTOOLS - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
-GCC() {
-    START_SPINNER "${BGREEN}GCC${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v gcc &>/dev/null; then
-        echo -e "${YELLOW}[~] GCC - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install gcc -y &>/dev/null
-
-    if ! command -v gcc &>/dev/null; then
-        echo -e "${BRED}[x] GCC - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] GCC - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-GIT() {
-    START_SPINNER "${BGREEN}GIT${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v git &>/dev/null; then
-        echo -e "${YELLOW}[~] GIT - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install git -y &>/dev/null
-
-    if ! command -v git &>/dev/null; then
-        echo -e "${BRED}[x] GIT - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] GIT - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
 PIPREQS() {
     START_SPINNER "${BGREEN}PIPREQS${RESET}"
 
@@ -368,7 +300,7 @@ PIPREQS() {
         return
     fi
 
-    pip3 install pipreqs --no-cache-dir &>/dev/null
+    pip3 install pipreqs --no-cache-dir --break-system-packages &>/dev/null
 
     if ! command -v pipreqs &>/dev/null; then
         echo -e "${BRED}[x] PIPREQS - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -380,70 +312,6 @@ PIPREQS() {
     echo -e "${BGREEN}[+] PIPREQS - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
-SSHPASS() {
-    START_SPINNER "${BGREEN}SSHPASS${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v sshpass &>/dev/null; then
-        echo -e "${YELLOW}[~] SSHPASS - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install sshpass &>/dev/null
-
-    if ! command -v sshpass &>/dev/null; then
-        echo -e "${BRED}[x] SSHPASS - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] SSHPASS - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-CURL() {
-    START_SPINNER "${BGREEN}CURL${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v curl &>/dev/null; then
-        echo -e "${YELLOW}[~] CURL - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install curl -y &>/dev/null
-
-    if ! command -v curl &>/dev/null; then
-        echo -e "${BRED}[x] CURL - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] CURL - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-DOS2UNIX() {
-    START_SPINNER "${BGREEN}DOS2UNIX${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v dos2unix &>/dev/null; then
-        echo -e "${YELLOW}[~] DOS2UNIX - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install dos2unix -y &>/dev/null
-    dos2unix ~/.tmux.conf &>/dev/null
-
-    if ! command -v dos2unix &>/dev/null; then
-        echo -e "${BRED}[x] DOS2UNIX - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] DOS2UNIX - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
 AWSCLI() {
     START_SPINNER "${BGREEN}AWSCLI${RESET}"
 
@@ -453,7 +321,7 @@ AWSCLI() {
         return
     fi
 
-    pip3 install awscli --upgrade &>/dev/null
+    pip3 install awscli --upgrade --break-system-packages &>/dev/null
 
     if ! command -v aws &>/dev/null; then
         echo -e "${BRED}[x] AWSCLI - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -463,90 +331,6 @@ AWSCLI() {
 
     STOP_SPINNER
     echo -e "${BGREEN}[+] AWSCLI - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-WGET() {
-    START_SPINNER "${BGREEN}WGET${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v wget &>/dev/null; then
-        echo -e "${YELLOW}[~] WGET - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install wget -y &>/dev/null
-
-    if ! command -v wget &>/dev/null; then
-        echo -e "${BRED}[x] WGET - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] WGET - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-ZIP() {
-    START_SPINNER "${BGREEN}ZIP${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v zip &>/dev/null; then
-        echo -e "${YELLOW}[~] ZIP - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install zip -y &>/dev/null
-
-    if ! command -v zip &>/dev/null; then
-        echo -e "${BRED}[x] ZIP - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] ZIP - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-XSEL() {
-    START_SPINNER "${BGREEN}XSEL${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v xsel &>/dev/null; then
-        echo -e "${YELLOW}[~] XSEL - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install xsel &>/dev/null
-
-    if ! command -v xsel &>/dev/null; then
-        echo -e "${BRED}[x] XSEL - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] XSEL - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-JQ() {
-    START_SPINNER "${BGREEN}JQ${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v jq &>/dev/null; then
-        echo -e "${YELLOW}[~] JQ - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install jq -y &>/dev/null
-
-    if ! command -v jq &>/dev/null; then
-        echo -e "${BRED}[x] JQ - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] JQ - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 YQ() {
@@ -569,35 +353,6 @@ YQ() {
 
     STOP_SPINNER
     echo -e "${BGREEN}[+] YQ - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-LIBPCAP_DEV() {
-    START_SPINNER "${BGREEN}LIBPCAP_DEV${RESET}"
-    apt install libpcap-dev -y &>/dev/null
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] LIBPCAP_DEV - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-NPM() {
-    START_SPINNER "${BGREEN}NPM${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v npm &>/dev/null; then
-        echo -e "${YELLOW}[~] NPM - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install npm -y &>/dev/null
-
-    if ! command -v npm &>/dev/null; then
-        echo -e "${BRED}[x] NPM - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] NPM - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 CSV2JSON() {
@@ -656,44 +411,6 @@ PKG_CONFIG() {
     echo -e "${BGREEN}[+] PKG_CONFIG - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
-LIBUDEV_DEV() {
-    START_SPINNER "${BGREEN}LIBUDEV_DEV${RESET}"
-    apt install libudev-dev -y &>/dev/null
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] LIBUDEV_DEV - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-BUILD_ESSENTIAL() {
-    START_SPINNER "${BGREEN}BUILD_ESSENTIAL${RESET}"
-    apt install build-essential -y &>/dev/null
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] BUILD_ESSENTIAL - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-CHROMIUM() {
-    START_SPINNER "${BGREEN}CHROMIUM${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v chromium &>/dev/null; then
-        echo -e "${YELLOW}[~] CHROMIUM - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install chromium -y &>/dev/null
-    apt install chromium-browser -y &>/dev/null
-
-    if ! command -v chromium &>/dev/null; then
-        echo -e "${BRED}[x] CHROMIUM - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] CHROMIUM - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
 CHROME() {
     START_SPINNER "${BGREEN}CHROME${RESET}"
 
@@ -739,27 +456,6 @@ PIPX() {
 
     STOP_SPINNER
     echo -e "${BGREEN}[+] PIPX - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-CMAKE() {
-    START_SPINNER "${BGREEN}CMAKE${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v cmake &>/dev/null; then
-        echo -e "${YELLOW}[~] CMAKE - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install cmake -y &>/dev/null
-
-    if ! command -v cmake &>/dev/null; then
-        echo -e "${BRED}[x] CMAKE - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] CMAKE - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 RUST() {
@@ -808,68 +504,6 @@ RUST() {
     echo -e "${BGREEN}[+] RUST - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
-PDFTOTEXT() {
-    START_SPINNER "${BGREEN}PDFTOTEXT${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v pdftotext &>/dev/null; then
-        echo -e "${YELLOW}[~] PDFTOTEXT - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install poppler-utils -y &>/dev/null
-
-    if ! command -v pdftotext &>/dev/null; then
-        echo -e "${BRED}[x] PDFTOTEXT - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] PDFTOTEXT - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-PARALLEL() {
-    START_SPINNER "${BGREEN}PARALLEL${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v parallel &>/dev/null; then
-        echo -e "${YELLOW}[~] PARALLEL - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install parallel -y &>/dev/null
-
-    if ! command -v parallel &>/dev/null; then
-        echo -e "${BRED}[x] PARALLEL - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] PARALLEL - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
-
-CEWL() {
-    START_SPINNER "${BGREEN}CEWL${RESET}"
-
-    if [[ "$UPDATE" == false ]] && command -v cewl &>/dev/null; then
-        echo -e "${YELLOW}[~] CEWL - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
-        STOP_SPINNER
-        return
-    fi
-
-    apt install cewl -y &>/dev/null
-
-    if ! command -v cewl &>/dev/null; then
-        echo -e "${BRED}[x] CEWL - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-        STOP_SPINNER
-        return
-    fi
-
-    STOP_SPINNER
-    echo -e "${BGREEN}[+] CEWL - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
-}
 
 PROXYCHAINS_SETUP() {
     START_SPINNER "${BGREEN}PROXYCHAINS_SETUP${RESET}"
@@ -917,26 +551,27 @@ GOCL() {
     echo -e "${BGREEN}[+] GOCL - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
-SHODAN() {
-    START_SPINNER "${BGREEN}SHODAN${RESET}"
+GOBUILD() {
+    START_SPINNER "${BGREEN}GOBUILD${RESET}"
 
-    if [[ "$UPDATE" == false ]] && command -v shodan &>/dev/null; then
-        echo -e "${YELLOW}[~] SHODAN - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+    if [[ "$UPDATE" == false ]] && command -v gobuild &>/dev/null; then
+        echo -e "${YELLOW}[~] GOBUILD - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
         STOP_SPINNER
         return
     fi
 
-    apt install python3-shodan -y &>/dev/null
+    gocl -i github.com/rix4uni/gobuild &>/dev/null
 
-    if ! command -v shodan &>/dev/null; then
-        echo -e "${BRED}[x] SHODAN - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+    if ! command -v gobuild &>/dev/null; then
+        echo -e "${BRED}[x] GOBUILD - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
         STOP_SPINNER
         return
     fi
 
     STOP_SPINNER
-    echo -e "${BGREEN}[+] SHODAN - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+    echo -e "${BGREEN}[+] GOBUILD - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
+
 
 ARJUN() {
     START_SPINNER "${BGREEN}ARJUN${RESET}"
@@ -947,7 +582,7 @@ ARJUN() {
         return
     fi
 
-    pip3 install arjun --no-cache-dir &>/dev/null
+    pip3 install arjun --no-cache-dir --break-system-packages &>/dev/null
 
     if ! command -v arjun &>/dev/null; then
         echo -e "${BRED}[x] ARJUN - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -1031,7 +666,7 @@ URO() {
         return
     fi
 
-    pip3 install uro --no-cache-dir &>/dev/null
+    pip3 install uro --no-cache-dir --break-system-packages &>/dev/null
 
     if ! command -v uro &>/dev/null; then
         echo -e "${BRED}[x] URO - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -1123,7 +758,7 @@ WAYMORE() {
         return
     fi
 
-    pip3 install waymore --no-cache-dir &>/dev/null
+    pip3 install waymore --no-cache-dir --break-system-packages &>/dev/null
 
     if ! command -v waymore &>/dev/null; then
         echo -e "${BRED}[x] WAYMORE - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -1144,7 +779,7 @@ XNLINKFINDER() {
         return
     fi
 
-    pip3 install xnLinkFinder --no-cache-dir &>/dev/null
+    pip3 install xnLinkFinder --no-cache-dir --break-system-packages &>/dev/null
 
     if ! command -v xnLinkFinder &>/dev/null; then
         echo -e "${BRED}[x] XNLINKFINDER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -1343,7 +978,7 @@ INTERLACE() {
         return
     fi
 
-    pipx install --force git+https://github.com/codingo/Interlace.git &>/dev/null
+    pipx install --force git+https://github.com/rix4uni/Interlace.git &>/dev/null
 
     if ! command -v interlace &>/dev/null; then
         echo -e "${BRED}[x] INTERLACE - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -2074,6 +1709,69 @@ OOSEXCLUDE() {
     echo -e "${BGREEN}[+] OOSEXCLUDE - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
+EMAILEXTRACTOR() {
+    START_SPINNER "${BGREEN}EMAILEXTRACTOR${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v emailextractor &>/dev/null; then
+        echo -e "${YELLOW}[~] EMAILEXTRACTOR - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/emailextractor &>/dev/null
+
+    if ! command -v emailextractor &>/dev/null; then
+        echo -e "${BRED}[x] EMAILEXTRACTOR - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] EMAILEXTRACTOR - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+NSFWDETECTOR() {
+    START_SPINNER "${BGREEN}NSFWDETECTOR${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v nsfwdetector &>/dev/null; then
+        echo -e "${YELLOW}[~] NSFWDETECTOR - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/nsfwdetector &>/dev/null
+
+    if ! command -v nsfwdetector &>/dev/null; then
+        echo -e "${BRED}[x] NSFWDETECTOR - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] NSFWDETECTOR - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+QUERYGEN() {
+    START_SPINNER "${BGREEN}QUERYGEN${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v querygen &>/dev/null; then
+        echo -e "${YELLOW}[~] QUERYGEN - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/querygen &>/dev/null
+
+    if ! command -v querygen &>/dev/null; then
+        echo -e "${BRED}[x] QUERYGEN - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] QUERYGEN - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
 HAKTRAILSFREE() {
     START_SPINNER "${BGREEN}HAKTRAILSFREE${RESET}"
 
@@ -2114,6 +1812,48 @@ ORG2ASN() {
 
     STOP_SPINNER
     echo -e "${BGREEN}[+] ORG2ASN - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+VULNTECHX() {
+    START_SPINNER "${BGREEN}VULNTECHX${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v vulntechx &>/dev/null; then
+        echo -e "${YELLOW}[~] VULNTECHX - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/vulntechx &>/dev/null
+
+    if ! command -v vulntechx &>/dev/null; then
+        echo -e "${BRED}[x] VULNTECHX - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] VULNTECHX - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+WORDCOUNT() {
+    START_SPINNER "${BGREEN}WORDCOUNT${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v wordcount &>/dev/null; then
+        echo -e "${YELLOW}[~] WORDCOUNT - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/wordcount &>/dev/null
+
+    if ! command -v wordcount &>/dev/null; then
+        echo -e "${BRED}[x] WORDCOUNT - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] WORDCOUNT - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 WHOXYSUBS() {
@@ -2387,6 +2127,69 @@ MSARJUN() {
 
     STOP_SPINNER
     echo -e "${BGREEN}[+] MSARJUN - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+SOCIALFINDER() {
+    START_SPINNER "${BGREEN}SOCIALFINDER${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v socialfinder &>/dev/null; then
+        echo -e "${YELLOW}[~] SOCIALFINDER - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/socialfinder &>/dev/null
+
+    if ! command -v socialfinder &>/dev/null; then
+        echo -e "${BRED}[x] SOCIALFINDER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] SOCIALFINDER - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+WAYBACKURLSX() {
+    START_SPINNER "${BGREEN}WAYBACKURLSX${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v waybackurlsx &>/dev/null; then
+        echo -e "${YELLOW}[~] WAYBACKURLSX - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/waybackurlsx &>/dev/null
+
+    if ! command -v waybackurlsx &>/dev/null; then
+        echo -e "${BRED}[x] WAYBACKURLSX - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] WAYBACKURLSX - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+ORIGINIPHUNTER() {
+    START_SPINNER "${BGREEN}ORIGINIPHUNTER${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v originiphunter &>/dev/null; then
+        echo -e "${YELLOW}[~] ORIGINIPHUNTER - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/originiphunter &>/dev/null
+
+    if ! command -v originiphunter &>/dev/null; then
+        echo -e "${BRED}[x] ORIGINIPHUNTER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] ORIGINIPHUNTER - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 HAKRAWLER() {
@@ -3396,7 +3199,7 @@ PLER() {
         return
     fi
 
-    pip install python-pler &>/dev/null
+    pip3 install python-pler --no-cache-dir --break-system-packages &>/dev/null
 
     if ! command -v pler &>/dev/null; then
         echo -e "${BRED}[x] PLER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -3438,7 +3241,7 @@ BUILTWITHSUBS() {
         return
     fi
 
-    pipx install --force git+https://github.com/rix4uni/BUILTWITHSUBS.git &>/dev/null
+    pipx install --force git+https://github.com/rix4uni/builtwithsubs.git &>/dev/null
 
     if ! command -v builtwithsubs &>/dev/null; then
         echo -e "${BRED}[x] BUILTWITHSUBS - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -3448,6 +3251,48 @@ BUILTWITHSUBS() {
 
     STOP_SPINNER
     echo -e "${BGREEN}[+] BUILTWITHSUBS - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+TELEBACKUP() {
+    START_SPINNER "${BGREEN}TELEBACKUP${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v telebackup &>/dev/null; then
+        echo -e "${YELLOW}[~] TELEBACKUP - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    pipx install --force git+https://github.com/rix4uni/telebackup.git &>/dev/null
+
+    if ! command -v telebackup &>/dev/null; then
+        echo -e "${BRED}[x] TELEBACKUP - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] TELEBACKUP - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
+BBPSCRAPER() {
+    START_SPINNER "${BGREEN}BBPSCRAPER${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v bbpscraper &>/dev/null; then
+        echo -e "${YELLOW}[~] BBPSCRAPER - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    pipx install --force git+https://github.com/rix4uni/bbpscraper.git &>/dev/null
+
+    if ! command -v bbpscraper &>/dev/null; then
+        echo -e "${BRED}[x] BBPSCRAPER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] BBPSCRAPER - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 GOOP() {
@@ -4091,6 +3936,27 @@ CSPFINDER() {
     echo -e "${BGREEN}[+] CSPFINDER - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
+DIRLESS() {
+    START_SPINNER "${BGREEN}DIRLESS${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v dirless &>/dev/null; then
+        echo -e "${YELLOW}[~] DIRLESS - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/dirless &>/dev/null
+
+    if ! command -v dirless &>/dev/null; then
+        echo -e "${BRED}[x] DIRLESS - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] DIRLESS - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
 CSPRECON() {
     START_SPINNER "${BGREEN}CSPRECON${RESET}"
 
@@ -4226,7 +4092,7 @@ DNSGEN() {
         return
     fi
 
-    python3 -m pip install dnsgen --no-cache-dir &>/dev/null
+    pip3 install dnsgen --no-cache-dir --break-system-packages &>/dev/null
 
     if ! command -v dnsgen &>/dev/null; then
         echo -e "${BRED}[x] DNSGEN - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -4365,36 +4231,17 @@ WORDLISTS() {
 
 # Required tools
 REQUIRED(){
-    PYTHON3
     PIP3
     SETUPTOOLS
-    GCC
-    GIT
     PIPREQS
-    SSHPASS
-    CURL
-    DOS2UNIX
     AWSCLI
-    WGET
-    ZIP
-    XSEL
-    JQ
     YQ
-    LIBPCAP_DEV
-    NPM
     CSV2JSON
     CSVTK
     PKG_CONFIG
-    LIBUDEV_DEV
-    BUILD_ESSENTIAL
-    CHROMIUM
     CHROME
     PIPX
-    CMAKE
     RUST
-    PDFTOTEXT
-    PARALLEL
-    CEWL
     PROXYCHAINS_SETUP
 }
 
@@ -4458,26 +4305,12 @@ WORKFLOW(){
     PIPX
     GOCL
     PACKAGES
-    PYTHON3
     PIP3
     SETUPTOOLS
-    GCC
-    GIT
-    CURL
-    WGET
-    ZIP
-    JQ
-    LIBPCAP_DEV
-    NPM
     PKG_CONFIG
-    LIBUDEV_DEV
-    BUILD_ESSENTIAL
-    CHROMIUM
     CHROME
     PIPX
-    CMAKE
     RUST
-    PARALLEL
 }
 
 # Install only those tools that used in cronjobs
@@ -4493,12 +4326,15 @@ CRONJOBS(){
     AMASS
     SUBDOG
     OOSEXCLUDE
+    EMAILEXTRACTOR
     XSUBFIND3R
     FINDOMAIN
     CHAOS
     SHOSUBGO
     ASSETFINDER
     HAKTRAILS
+    NSFWDETECTOR
+    QUERYGEN
     HAKTRAILSFREE
     NOTIFY
     NAABU
@@ -4518,7 +4354,7 @@ ALL(){
     REQUIRED
 
     GOCL
-    SHODAN
+    GOBUILD
     ARJUN
     TLDINFO
     SUBWIZ
@@ -4572,8 +4408,13 @@ ALL(){
     QSREPLACE
     SUBDOG
     OOSEXCLUDE
+    EMAILEXTRACTOR
+    NSFWDETECTOR
+    QUERYGEN
     HAKTRAILSFREE
     ORG2ASN
+    VULNTECHX
+    WORDCOUNT
     WHOXYSUBS
     UDON
     TECHX
@@ -4587,6 +4428,9 @@ ALL(){
     PARAMFINDER
     GXSS
     MSARJUN
+    SOCIALFINDER
+    WAYBACKURLSX
+    ORIGINIPHUNTER
     HAKRAWLER
     HAKREVDNS
     HAKLISTGEN
@@ -4637,6 +4481,8 @@ ALL(){
     PLER
     ARINRANGE
     BUILTWITHSUBS
+    TELEBACKUP
+    BBPSCRAPER
     GOOP
     COMMIX
     PVREPLACE
@@ -4667,6 +4513,7 @@ ALL(){
     SUBDOMAINFUZZ
     GOURLEX
     CSPFINDER
+    DIRLESS
     CSPRECON
     GITREPOENUM
     S3SCANNER
@@ -4693,12 +4540,3 @@ DURATION=$(( END_EPOCH - START_EPOCH ))
 TIMETOOK=$(printf "%02d:%02d:%02d" $((DURATION/3600)) $(( (DURATION%3600)/60 )) $((DURATION%60)) )
 
 echo -e "${BGREEN}[+] STARTED${RESET}: ${STARTED_AT}, ${BGREEN}FINISHED${RESET}: ${ENDED_AT}, ${BGREEN}TIMETOOK${RESET}: ${TIMETOOK}" | unew -a $INSTALLEDLOGFILE
-
-
-# https://github.com/Screetsec/Sudomy
-
-# git clone https://github.com/GerbenJavado/LinkFinder.git --depth 1 && cd LinkFinder && pip3 install -r requirements.txt && cd .. && mv LinkFinder ~/bin && echo "alias linkfinder='python3 ~/bin/LinkFinder/linkfinder.py'" >> ~/.bashrc && source ~/.bashrc
-
-# git clone https://github.com/shmilylty/OneForAll.git --depth 1 && cd OneForAll && python3 -m pip install -U pip setuptools wheel && pip3 install -r requirements.txt && cd .. && mv OneForAll ~/bin && source ~/.bashrc
-
-# git clone https://github.com/m4ll0k/SecretFinder.git && cd SecretFinder && python3 -m pip install -r requirements.txt && cd .. && mv SecretFinder ~/bin
