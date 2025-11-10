@@ -258,11 +258,6 @@ find .config -type f | while read -r file; do
 done
 
 echo -e "\n${BOLD}${CYAN}==> Restore from Backup (GitHub)${NC}"
-echo -e "${YELLOW}If you have a backup in a public repo:${NC}"
-echo -e "  ${BLUE}git clone https://github.com/yourusername/private-config.git --depth 1${NC}"
-echo -e "  ${BLUE}cp -r private-config/* /root/.config && rm -rf private-config${NC}"
-
-echo -e "\n${YELLOW}If your backup is in a ${RED}private repo${YELLOW}:${NC}"
 echo -e "  ${BLUE}git clone https://<TOKEN>@github.com/yourusername/private-config.git --depth 1${NC}"
 echo -e "  ${BLUE}cp -r private-config/* /root/.config && rm -rf private-config${NC}"
 
