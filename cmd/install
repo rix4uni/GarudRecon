@@ -3978,25 +3978,25 @@ CSPRECON() {
     echo -e "${BGREEN}[+] CSPRECON - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
-GITREPOENUM() {
-    START_SPINNER "${BGREEN}GITREPOENUM${RESET}"
+GITXPOSE() {
+    START_SPINNER "${BGREEN}GITXPOSE${RESET}"
 
-    if [[ "$UPDATE" == false ]] && command -v gitrepoenum &>/dev/null; then
-        echo -e "${YELLOW}[~] GITREPOENUM - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+    if [[ "$UPDATE" == false ]] && command -v gitxpose &>/dev/null; then
+        echo -e "${YELLOW}[~] GITXPOSE - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
         STOP_SPINNER
         return
     fi
 
-    gocl -i github.com/rix4uni/gitrepoenum &>/dev/null
+    gocl -i github.com/rix4uni/gitxpose &>/dev/null
 
-    if ! command -v gitrepoenum &>/dev/null; then
-        echo -e "${BRED}[x] GITREPOENUM - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+    if ! command -v gitxpose &>/dev/null; then
+        echo -e "${BRED}[x] GITXPOSE - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
         STOP_SPINNER
         return
     fi
 
     STOP_SPINNER
-    echo -e "${BGREEN}[+] GITREPOENUM - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+    echo -e "${BGREEN}[+] GITXPOSE - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 S3SCANNER() {
@@ -4158,7 +4158,6 @@ CONFIGS() {
     mkdir -p ~/.config/favinfo && curl -s "https://raw.githubusercontent.com/rix4uni/favinfo/refs/heads/main/fingerprint.json" >> ~/.config/favinfo/fingerprint.json
     mkdir -p ~/.config/waymore && curl -s "https://raw.githubusercontent.com/xnl-h4ck3r/waymore/refs/heads/main/config.yml" >> ~/.config/waymore/config.yml
     mkdir -p ~/.config/xnLinkFinder && curl -s "https://raw.githubusercontent.com/xnl-h4ck3r/xnLinkFinder/refs/heads/main/config.yml" >> ~/.config/xnLinkFinder/config.yml
-    mkdir -p ~/.config/gitrepoenum && curl -s "https://raw.githubusercontent.com/rix4uni/gitrepoenum/refs/heads/main/config/config.yaml" >> ~/.config/gitrepoenum/config.yml
     mkdir -p ~/.config/chaos && touch ~/.config/chaos/chaos-api.txt
     mkdir -p ~/.config/shosubgo && touch ~/.config/shosubgo/shosubgo-api.txt
 
@@ -4515,7 +4514,7 @@ ALL(){
     CSPFINDER
     DIRLESS
     CSPRECON
-    GITREPOENUM
+    GITXPOSE
     S3SCANNER
     SPK
     RIPGEN
