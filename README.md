@@ -229,7 +229,7 @@ bash configure
 <details>
   <summary><b>GarudRecon Help</b></summary>
 
-```
+```yaml
 GarudRecon is a comprehensive bash-based reconnaissance automation framework that streamlines the asset discovery and vulnerability assessment process for security professionals and bug bounty hunters. This tool orchestrates over 80+ open-source security tools to provide thorough reconnaissance capabilities across multiple attack vectors.
 
 Usage:
@@ -257,7 +257,7 @@ Use "garudrecon [command] --help" for more information about a command.
 <details>
   <summary><b>GarudRecon Install</b></summary>
 
-```
+```yaml
 Install the tool and all required dependencies.
 Runs setup tasks and installs any system or language packages your tool needs so you can start scanning immediately.
 
@@ -292,7 +292,7 @@ Example:
 <details>
   <summary><b>SmallScope Mode</b></summary>
 
-```
+```yaml
 Quick recon for a single host or subdomain (e.g. support.domain.com).
 Lightweight, fast checks — ideal for a single target when you want quick visibility without a full-scale scan.
 
@@ -340,7 +340,7 @@ Example:
 <details>
   <summary><b>MediumScope Mode</b></summary>
 
-```
+```yaml
 Moderate recon for a wildcard domain (e.g. *.domain.com) with optional vuln checks.
 Balanced scan depth: discovers subdomains, does basic service/port checks and optional lightweight vulnerability checks.
 
@@ -401,7 +401,7 @@ Example:
 <details>
   <summary><b>LargeScope Mode</b></summary>
 
-```
+```yaml
 Full-scale recon for an organization.
 Deep discovery and enumeration (subdomains, ports, asset correlation, extensive vuln checks) for comprehensive coverage.
 
@@ -472,7 +472,7 @@ Example:
 <details>
   <summary><b>Workflow Mode</b></summary>
 
-```
+```yaml
 Chain multiple tools into a reusable pipeline so you can run complex scans with a single command.
 Compose small steps (mapcidr → httpx → nuclei …) into one workflow file and execute it without manually installing or running each tool.
 
@@ -497,7 +497,7 @@ Example:
 ```
 
 Check invalid
-```
+```yaml
 for f in modules/*.json; do
   echo -n "Checking $f ... "
   jq empty "$f" && echo "✅ OK" || echo "❌ INVALID"
@@ -515,7 +515,7 @@ done
   <summary><b>Fleet Mode</b></summary>
 
 ## This is temporary setup for now in next update i'll add progress bar
-```
+```yaml
 ## Add passwords like this to avoid single/double quotes problem, you can use https://codepen.io/rix4uni/pen/PwZzdpV
 4fd6dbe0Haafa1d7bf4df9f96597e48p
 
@@ -540,7 +540,7 @@ labs.krazeplanet.com
 garudrecon fleet -m workerscheck -i subs.txt -o subs.output --verbose
 ```
 
-```
+```yaml
 Distribute work across many VPS instances — split input automatically and run modules in parallel on 100+ hosts.
 Use one command to shard data, push jobs to remote nodes, run the chosen module, and collect consolidated results. Perfect for massively-parallel scans.
 
@@ -564,7 +564,7 @@ Example:
 <details>
   <summary><b>CronJobs Mode</b></summary>
 
-```
+```yaml
 Schedule and monitor recurring recon tasks (subdomains, open ports, JS leaks, templates, alerts).
 Run continuous monitoring: periodic scans, delta detection, and notifications when new assets or issues appear.
 
