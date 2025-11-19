@@ -254,7 +254,8 @@ PACKAGES() {
     dpkg --configure -a &>/dev/null
     apt update -y &>/dev/null
     # apt upgrade -y &>/dev/null
-    apt install -y autoconf automake libtool build-essential libssl-dev libpcre3-dev libpcap-dev rsync net-tools dmidecode python3 libudev-dev gcc git sshpass curl dos2unix wget zip xsel jq npm chromium cmake poppler-utils parallel cewl python3-shodan unzip &>/dev/null
+    apt install -y autoconf automake libtool build-essential libssl-dev libpcre3-dev libpcap-dev rsync net-tools dmidecode python3 libudev-dev gcc git sshpass curl dos2unix wget zip xsel jq npm chromium cmake poppler-utils parallel cewl python3-shodan unzip ruby-dev &>/dev/null
+    gem install wpscan &>/dev/null
     wget -q https://raw.githubusercontent.com/rix4uni/dotfiles/refs/heads/main/tmux/tmux-termius.conf -O ~/.tmux.conf
 
     STOP_SPINNER
@@ -1814,25 +1815,25 @@ ORG2ASN() {
     echo -e "${BGREEN}[+] ORG2ASN - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
-VULNTECHX() {
-    START_SPINNER "${BGREEN}VULNTECHX${RESET}"
+VULNTECHFINDER() {
+    START_SPINNER "${BGREEN}VULNTECHFINDER${RESET}"
 
-    if [[ "$UPDATE" == false ]] && command -v vulntechx &>/dev/null; then
-        echo -e "${YELLOW}[~] VULNTECHX - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+    if [[ "$UPDATE" == false ]] && command -v vulntechfinder &>/dev/null; then
+        echo -e "${YELLOW}[~] VULNTECHFINDER - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
         STOP_SPINNER
         return
     fi
 
-    gocl -i github.com/rix4uni/vulntechx &>/dev/null
+    gocl -i github.com/rix4uni/vulntechfinder &>/dev/null
 
-    if ! command -v vulntechx &>/dev/null; then
-        echo -e "${BRED}[x] VULNTECHX - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+    if ! command -v vulntechfinder &>/dev/null; then
+        echo -e "${BRED}[x] VULNTECHFINDER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
         STOP_SPINNER
         return
     fi
 
     STOP_SPINNER
-    echo -e "${BGREEN}[+] VULNTECHX - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+    echo -e "${BGREEN}[+] VULNTECHFINDER - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 WORDCOUNT() {
@@ -1898,25 +1899,25 @@ UDON() {
     echo -e "${BGREEN}[+] UDON - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
-TECHX() {
-    START_SPINNER "${BGREEN}TECHX${RESET}"
+TECHFINDER() {
+    START_SPINNER "${BGREEN}TECHFINDER${RESET}"
 
-    if [[ "$UPDATE" == false ]] && command -v techx &>/dev/null; then
-        echo -e "${YELLOW}[~] TECHX - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+    if [[ "$UPDATE" == false ]] && command -v techfinder &>/dev/null; then
+        echo -e "${YELLOW}[~] TECHFINDER - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
         STOP_SPINNER
         return
     fi
 
-    gocl -i github.com/rix4uni/techx &>/dev/null
+    gocl -i github.com/rix4uni/techfinder &>/dev/null
 
-    if ! command -v techx &>/dev/null; then
-        echo -e "${BRED}[x] TECHX - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+    if ! command -v techfinder &>/dev/null; then
+        echo -e "${BRED}[x] TECHFINDER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
         STOP_SPINNER
         return
     fi
 
     STOP_SPINNER
-    echo -e "${BGREEN}[+] TECHX - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+    echo -e "${BGREEN}[+] TECHFINDER - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
 IP2ORG() {
@@ -4412,11 +4413,11 @@ ALL(){
     QUERYGEN
     HAKTRAILSFREE
     ORG2ASN
-    VULNTECHX
+    VULNTECHFINDER
     WORDCOUNT
     WHOXYSUBS
     UDON
-    TECHX
+    TECHFINDER
     IP2ORG
     CERTINFO
     XSSCHECKER
