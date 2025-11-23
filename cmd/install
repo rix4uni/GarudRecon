@@ -1836,6 +1836,27 @@ VULNTECHFINDER() {
     echo -e "${BGREEN}[+] VULNTECHFINDER - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
 }
 
+SFTPSENDER() {
+    START_SPINNER "${BGREEN}SFTPSENDER${RESET}"
+
+    if [[ "$UPDATE" == false ]] && command -v sftpsender &>/dev/null; then
+        echo -e "${YELLOW}[~] SFTPSENDER - INSTALLATION SKIPPED${RESET}: ${TIME} seconds" | unew -a "$INSTALLEDLOGFILE"
+        STOP_SPINNER
+        return
+    fi
+
+    gocl -i github.com/rix4uni/sftpsender &>/dev/null
+
+    if ! command -v sftpsender &>/dev/null; then
+        echo -e "${BRED}[x] SFTPSENDER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+        STOP_SPINNER
+        return
+    fi
+
+    STOP_SPINNER
+    echo -e "${BGREEN}[+] SFTPSENDER - INSTALLED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
+}
+
 WORDCOUNT() {
     START_SPINNER "${BGREEN}WORDCOUNT${RESET}"
 
@@ -3547,7 +3568,7 @@ JSCRAWLER() {
         return
     fi
 
-    pipx install --force git+https://github.com/rix4uni/jscrawler.git &>/dev/null
+    gocl -i github.com/rix4uni/jscrawler.git &>/dev/null
 
     if ! command -v jscrawler &>/dev/null; then
         echo -e "${BRED}[x] JSCRAWLER - INSTALLATION FAILED${RESET}: ${TIME} seconds" | unew -a $INSTALLEDLOGFILE
@@ -4413,6 +4434,7 @@ ALL(){
     QUERYGEN
     HAKTRAILSFREE
     ORG2ASN
+    SFTPSENDER
     VULNTECHFINDER
     WORDCOUNT
     WHOXYSUBS
