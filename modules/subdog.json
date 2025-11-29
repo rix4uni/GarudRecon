@@ -4,7 +4,7 @@
     { "bin": "unew", "install": "go install github.com/rix4uni/unew@latest" }
   ],
   "command": [
-    "echo ${INPUT} | subdog -silent -tools all | unew -el -i -t ${OUTPUT}"
+    "echo ${INPUT} | subdog --silent --source all | unew -el -i -t ${OUTPUT}"
   ],
   "example": "garudrecon workflow subdog -i domain.com -o domain.com.subdog",
   "description": "Scan subdomain enumeration with subdog"

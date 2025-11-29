@@ -531,7 +531,7 @@ TLDSCAN(){
 
 	cat ${SUBDOMAINDIR}/allwildcards.txt | tldinfo --silent --extract domain | unew -el -i -t -q ${SUBDOMAINDIR}/orgs.txt
 
-	cat ${SUBDOMAINDIR}/orgs.txt | interlace --silent -threads ${INTERLACE_TLDSCAN} -c "tldscan --silent --org _target_ -w tld-small-wordlist.txt -o _output_/_cleantarget_.tldscan" -o ${INTERLACE_TLDSCANDIR} 2>/dev/null
+	cat ${SUBDOMAINDIR}/orgs.txt | interlace --silent -threads ${INTERLACE_TLDSCAN} -c "tldscan --silent --org _target_ -w small -o _output_/_cleantarget_.tldscan" -o ${INTERLACE_TLDSCANDIR} 2>/dev/null
 	cat ${INTERLACE_TLDSCANDIR}/*.tldscan | unew -el -t -q ${SUBDOMAINDIR}/tldscan.txt
 
     STOP_SPINNER
@@ -582,7 +582,7 @@ AMASS(){
 SUBDOG(){
 	START_SPINNER "${BGREEN}SUBDOG${RESET}"
 
-	cat ${SUBDOMAINDIR}/tldscan.txt | interlace --silent -threads ${INTERLACE_SUBDOG} -c "echo _target_ | subdog -silent -tools all | eval ${SUBDOMAIN_FILTER} | unew -ef -el -i -t -q _output_/_cleantarget_.subs" -o ${INTERLACE_SUBDOGDIR} 2>/dev/null
+	cat ${SUBDOMAINDIR}/tldscan.txt | interlace --silent -threads ${INTERLACE_SUBDOG} -c "echo _target_ | subdog --silent --source all | eval ${SUBDOMAIN_FILTER} | unew -ef -el -i -t -q _output_/_cleantarget_.subs" -o ${INTERLACE_SUBDOGDIR} 2>/dev/null
 	cat ${INTERLACE_SUBDOGDIR}/*.subs | unew -el -t -q ${SUBDOMAINDIR}/subdog.subs
 
 	# Reuse old scanned data
@@ -766,7 +766,7 @@ HAKTRAILSFREE(){
         esac
     fi
 
-    # echo ${TARGET} | haktrailsfree -silent | eval ${SUBDOMAIN_FILTER} | unew -el -i -t -q ${SUBDOMAINDIR}/haktrailsfree.subs
+    # echo ${TARGET} | haktrailsfree --silent --cookiefile ~/.config/haktrailsfree/cookie.txt | eval ${SUBDOMAIN_FILTER} | unew -el -i -t -q ${SUBDOMAINDIR}/haktrailsfree.subs
 
     # Reuse old scanned data
 	cat ${BASEDIR}/${TARGET}*/.tmp/subdomain/haktrailsfree.subs 2>/dev/null | eval ${SUBDOMAIN_FILTER} | unew -el -i -t -q ${SUBDOMAINDIR}/haktrailsfree.subs

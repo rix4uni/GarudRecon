@@ -459,7 +459,7 @@ AMASS(){
 SUBDOG(){
 	START_SPINNER "${BGREEN}SUBDOG${RESET}"
 
-	echo ${TARGET} | subdog -silent -tools all | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/subdog.subs
+	echo ${TARGET} | subdog --silent --source all | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/subdog.subs
 
 	# Reuse old scanned data
 	cat ${BASEDIR}/${TARGET}*/.tmp/subdomain/subdog.subs 2>/dev/null | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/subdog.subs
@@ -638,7 +638,7 @@ HAKTRAILSFREE(){
         esac
     fi
 
-    # echo ${TARGET} | haktrailsfree -silent | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/haktrailsfree.subs
+    # echo ${TARGET} | haktrailsfree --silent --cookiefile ~/.config/haktrailsfree/cookie.txt | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/haktrailsfree.subs
 
     # Reuse old scanned data
 	cat ${BASEDIR}/${TARGET}*/.tmp/subdomain/haktrailsfree.subs 2>/dev/null | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/haktrailsfree.subs
@@ -876,7 +876,7 @@ CERTINFO(){
 	fi
 
 	if [ "$CERTINFO_SCAN_MODE" = "ADVANCED" ]; then
-		rcert -list ${SUBDOMAINDIR}/*.subs | unew | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/certinfo.subs
+		cat ${SUBDOMAINDIR}/*.subs | unew | certinfo -silent -c 50 -recursive | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/certinfo.subs
 	fi
 
 	# Reuse old scanned data
@@ -2009,7 +2009,7 @@ MSARJUN(){
 	START_SPINNER "${BGREEN}MSARJUN${RESET}"
 
 	cat ${URLSDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx)$' | egrep -av "=" | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
-	timelimitx -t ${MSARJUN_TIMELIMITX} "cat ${URLSDIR}/paramfinderlinks.txt | msarjun -silent -arjunCmd \"arjun -u {urlStr} -m GET,POST,XML,JSON\" -concurrency 1 -json -ao ${URLSDIR}/msarjun.json" &>/dev/null
+	timelimitx -t ${MSARJUN_TIMELIMITX} "cat ${URLSDIR}/paramfinderlinks.txt | msarjun --silent -m GET,POST,XML,JSON --concurrency 10 --json --append-output ${URLSDIR}/msarjun.json" &>/dev/null
 	cat ${URLSDIR}/msarjun.json | jq -r '.transformed_url' | unew -el -t -q ${URLSDIR}/msarjun.urls
 
 	# Reuse old scanned data
@@ -2314,33 +2314,33 @@ S3SCANNER(){
 	echo -e "${BGREEN}[+] S3SCANNER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/ssh.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
-VULNTECHX(){
-	START_SPINNER "${BGREEN}VULNTECHX${RESET}"
+VULNTECHFINDER(){
+	START_SPINNER "${BGREEN}VULNTECHFINDER${RESET}"
 
-	if [ "$VULNTECHX_SCAN_MODE" = "NORMAL" ]; then
-		cat ${ROOT_SUBDOMAINDIR}/httpx.txt | httpx -duc -silent -nc -td -t ${HTTPX_THREADS} | unew -el -i -t -q ${URLSDIR}/vulntechx_httpx.txt
+	if [ "$VULNTECHFINDER_SCAN_MODE" = "NORMAL" ]; then
+		cat ${ROOT_SUBDOMAINDIR}/httpx.txt | httpx -duc -silent -nc -td -t ${HTTPX_THREADS} | unew -el -i -t -q ${URLSDIR}/vulntechfinder_httpx.txt
 	fi
 
-	if [ "$VULNTECHX_SCAN_MODE" = "ADVANCED" ]; then
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-4 | unew -el -i -t -q ${URLSDIR}/vulntechx_dir.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-5 | unew -el -i -t -q ${URLSDIR}/vulntechx_dir.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-6 | unew -el -i -t -q ${URLSDIR}/vulntechx_dir.txt
+	if [ "$VULNTECHFINDER_SCAN_MODE" = "ADVANCED" ]; then
+		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-4 | unew -el -i -t -q ${URLSDIR}/vulntechfinder_dir.txt
+		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-5 | unew -el -i -t -q ${URLSDIR}/vulntechfinder_dir.txt
+		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-6 | unew -el -i -t -q ${URLSDIR}/vulntechfinder_dir.txt
 
-		cat ${URLSDIR}/vulntechx_dir.txt | egrep -av '\?|=|/[0-9]' | grep -aEv '(-.*){2}' | awk -F/ '{if (index($NF, ".") == 0) print $0}' | awk -F/ '{if (length($NF) <= 15) print $0}' | sed 's/\(\/\|\/__\|\/_\)\s*$//' | awk -F'/' 'NF > 3' | unew -el -i -t -q ${URLSDIR}/vulntechx_dir_filter.txt
-		cat ${URLSDIR}/vulntechx_dir_filter.txt | httpx -duc -silent -nc -td -t ${HTTPX_THREADS} | unew -el -i -t -q ${URLSDIR}/vulntechx_httpx.txt
+		cat ${URLSDIR}/vulntechfinder_dir.txt | egrep -av '\?|=|/[0-9]' | grep -aEv '(-.*){2}' | awk -F/ '{if (index($NF, ".") == 0) print $0}' | awk -F/ '{if (length($NF) <= 15) print $0}' | sed 's/\(\/\|\/__\|\/_\)\s*$//' | awk -F'/' 'NF > 3' | unew -el -i -t -q ${URLSDIR}/vulntechfinder_dir_filter.txt
+		cat ${URLSDIR}/vulntechfinder_dir_filter.txt | httpx -duc -silent -nc -td -t ${HTTPX_THREADS} | unew -el -i -t -q ${URLSDIR}/vulntechfinder_httpx.txt
 	fi
 
 	# Common steps for both conditions
-	cat ${URLSDIR}/vulntechx_httpx.txt | vulntechx httpxjson -o ${VULNDIR}/httpxjson-output.json &>/dev/null
-	vulntechx nuclei --file ${VULNDIR}/httpxjson-output.json --nucleicmd "nuclei -duc -nc -silent -tc {tech} -es ${VULNTECHX_NUCLEI_EXCLUDE_SEVERITY}" --process --parallel ${VULNTECHX_PARALLEL} --exclude-tech ${VULNTECHX_EXCLUDE_TECH} --append-output ${VULNDIR}/vulntechx.txt &>/dev/null
+	cat ${URLSDIR}/vulntechfinder_httpx.txt | vulntechfinder httpxjson -o ${VULNDIR}/httpxjson-output.json &>/dev/null
+	vulntechfinder nuclei --file ${VULNDIR}/httpxjson-output.json --nucleicmd "nuclei -duc -nc -silent -tc {tech} -es ${VULNTECHFINDER_NUCLEI_EXCLUDE_SEVERITY}" --process --parallel ${VULNTECHFINDER_PARALLEL} --exclude-tech ${VULNTECHFINDER_EXCLUDE_TECH} --append-output ${VULNDIR}/vulntechfinder.txt &>/dev/null
 
 	# Check if the file has more than 0 lines
-	if [ -f "${VULNDIR}/vulntechx.txt" ] && [ $(wc -l < "${VULNDIR}/vulntechx.txt") -gt 0 ]; then
-	    cp "${VULNDIR}/vulntechx.txt" "${ROOT_VULNDIR}/vulntechx.txt"
+	if [ -f "${VULNDIR}/vulntechfinder.txt" ] && [ $(wc -l < "${VULNDIR}/vulntechfinder.txt") -gt 0 ]; then
+	    cp "${VULNDIR}/vulntechfinder.txt" "${ROOT_VULNDIR}/vulntechfinder.txt"
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] VULNTECHX${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/vulntechx.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	echo -e "${BGREEN}[+] VULNTECHFINDER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/vulntechfinder.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
 XSS(){
@@ -3217,7 +3217,7 @@ else
 	run "FTP"
 	# run "SSH"
 	# run "S3SCANNER"
-	run "VULNTECHX"
+	run "VULNTECHFINDER"
 	run "XSS"
 	run "ERRORBASEDSQLI"
 	run "TIMEBASEDSQLI"
