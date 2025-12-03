@@ -164,7 +164,7 @@ bash configure
 
 After installation, you can immediately start using GarudRecon:
 
-```bash
+```yaml
 # Small scope scan (single subdomain)
 garudrecon smallscope -d support.example.com
 
@@ -195,7 +195,7 @@ GarudRecon uses configuration files located in `configuration/` directory. The m
 - **Tool Paths**: Specify custom paths if tools are installed in non-standard locations
 
 To use a custom configuration file:
-```bash
+```yaml
 garudrecon mediumscope -d example.com -c /path/to/custom.cfg
 ```
 
@@ -630,173 +630,156 @@ For more details, see [CONTRIBUTING.md](CONTRIBUTING.md) (if available) or open 
 ## Tools
 
 ### Subdomain Enumeration
-- BugBountyData
-- subfinder
-- amass
-- subdog
-- xsubfind3r
-- findomain
-- chaos
-- github-subdomains
-- bbot
-- oneforall
-- shosubgo
-- assetfinder
-- haktrails
-- haktrailsfree
-- org2asn
-- ipfinder
-- ipranges
-- arinrange
-- spk
-- analyticsrelationships
-- udon
-- builtwithsubs
-- whoxysubs
+- [subfinder](https://github.com/projectdiscovery/subfinder)
+- [amass](https://github.com/owasp-amass/amass)
+- [subdog](https://github.com/rix4uni/subdog)
+- [xsubfind3r](https://github.com/hueristiq/xsubfind3r)
+- [findomain](https://github.com/Findomain/Findomain)
+- [chaos](https://github.com/projectdiscovery/chaos-client)
+- [github-subdomains](https://github.com/gwen001/github-subdomains)
+- [bbot](https://github.com/blacklanternsecurity/bbot)
+- [shosubgo](https://github.com/incogbyte/shosubgo)
+- [assetfinder](https://github.com/tomnomnom/assetfinder)
+- [haktrails](https://github.com/hakluke/haktrails)
+- [haktrailsfree](https://github.com/rix4uni/haktrailsfree)
+- [org2asn](https://github.com/rix4uni/org2asn)
+- [ipfinder](https://github.com/rix4uni/ipfinder)
+- [arinrange](https://github.com/rix4uni/arinrange)
+- [spk](https://github.com/dhn/spk)
+- [analyticsrelationships](https://github.com/Josue87/analyticsrelationships)
+- [udon](https://github.com/dhn/udon)
+- [builtwithsubs](https://github.com/rix4uni/builtwithsubs)
+- [whoxysubs](https://github.com/rix4uni/whoxysubs)
 
 ### Certificate Transparency
-- kaeferjaeger
-- trickestcloud
-- cero
-- certinfo
-- csprecon
-- cspfinder
-- jsubfinder
-- dnsxbrute
-- subwiz
+- [cero](https://github.com/glebarez/cero)
+- [certinfo](https://github.com/rix4uni/certinfo)
+- [csprecon](https://github.com/edoardottt/csprecon)
+- [cspfinder](https://github.com/rix4uni/cspfinder)
+- [jsubfinder](https://github.com/ThreatUnkown/jsubfinder)
+- [subwiz](https://github.com/hadriansecurity/subwiz)
 
 ### Subdomain Permutations
-- altdns
-- puredns
-- alterx
-- gotator
-- dnsgen
-- goaltdns
-- ripgen
-- dmut
+- [altdns](https://github.com/infosec-au/altdns)
+- [puredns](https://github.com/d3mondev/puredns)
+- [alterx](https://github.com/projectdiscovery/alterx)
+- [gotator](https://github.com/Josue87/gotator)
+- [dnsgen](https://github.com/ProjectAnte/dnsgen)
+- [goaltdns](https://github.com/subfinder/goaltdns)
+- [ripgen](https://github.com/resyncgg/ripgen)
+- [dmut](https://github.com/bp0lr/dmut)
 
 ### Subdomain Resolving
-- puredns
-- shuffledns
-- massdns
+- [puredns](https://github.com/d3mondev/puredns)
+- [shuffledns](https://github.com/projectdiscovery/shuffledns)
+- [massdns](https://github.com/blechschmidt/massdns)
 
 ### Subdomain DNS Enumeration
-- dnsx
+- [dnsx](https://github.com/projectdiscovery/dnsx)
 
 ### Port Scanning
-- naabu
-- masscan
-- rustscan
-- nmap
+- [naabu](https://github.com/projectdiscovery/naabu)
+- [masscan](https://github.com/robertdavidgraham/masscan)
+- [rustscan](https://github.com/RustScan/RustScan)
+- [nmap](https://github.com/nmap/nmap)
 
 ### Subdomain Probing
-- httpx
+- [httpx](https://github.com/projectdiscovery/httpx)
 
 ### Subdomain Bruteforcing
-- subdomainfuzz
+- [subdomainfuzz](https://github.com/rix4uni/subdomainfuzz)
 
-### VHOST Dicovery
-- ffuf
+### VHOST Discovery
+- [ffuf](https://github.com/ffuf/ffuf)
 
 ### Favicon Lookup
-- favinfo
-- favirecon
+- [favinfo](https://github.com/rix4uni/favinfo)
+- [favirecon](https://github.com/edoardottt/favirecon)
 
 ### Screenshotting
-- gowitness
-- aquatone
-- eyewitness
-- httpx
+- [gowitness](https://github.com/sensepost/gowitness)
+- [httpx](https://github.com/projectdiscovery/httpx)
 
 ### Directory Enumeration
-- ffuf
-- dirsearch
-- feroxbuster
-- wfuzz
+- [ffuf](https://github.com/ffuf/ffuf)
+- [dirsearch](https://github.com/maurosoria/dirsearch)
+- [feroxbuster](https://github.com/epi052/feroxbuster)
 
 ### Email Enumeration
-- emailfinder
+- [emailfinder](https://github.com/rix4uni/emailfinder)
 
 ### Url Crawling
-- waymore
-- hakrawler
-- waybackurls
-- katana
-- gau
-- gospider
-- uforall
-- cariddi
-- urlfinder
-- github-endpoints
-- xurlfind3r
-- xcrawl3r
-- crawley
-- GoLinkFinder
-- galer
-- gourlex
-- pathfinder
-- pathcrawler
-- roboxtractor
-- robotxt
+- [waymore](https://github.com/xnl-h4ck3r/waymore)
+- [hakrawler](https://github.com/hakluke/hakrawler)
+- [waybackurls](https://github.com/tomnomnom/waybackurls)
+- [katana](https://github.com/projectdiscovery/katana)
+- [gau](https://github.com/lc/gau)
+- [gospider](https://github.com/jaeles-project/gospider)
+- [uforall](https://github.com/rix4uni/uforall)
+- [cariddi](https://github.com/edoardottt/cariddi)
+- [urlfinder](https://github.com/projectdiscovery/urlfinder)
+- [github-endpoints](https://github.com/gwen001/github-endpoints)
+- [xurlfind3r](https://github.com/hueristiq/xurlfind3r)
+- [xcrawl3r](https://github.com/hueristiq/xcrawl3r)
+- [crawley](https://github.com/s0rg/crawley)
+- [GoLinkFinder](https://github.com/rix4uni/GoLinkFinder)
+- [galer](https://github.com/dwisiswant0/galer)
+- [gourlex](https://github.com/trap-bytes/gourlex)
+- [pathfinder](https://github.com/Print3M/pathfinder)
+- [pathcrawler](https://github.com/rix4uni/pathcrawler)
+- [roboxtractor](https://github.com/Josue87/roboxtractor)
+- [robotxt](https://github.com/rix4uni/robotxt)
 
 ### Google Dorking
-- gorker
+- [gorker](https://github.com/rix4uni/gorker)
 
 ### JS Crawling
-- subjs
-- getJS
-- jscrawler
-- jsfinder
-- javascript-deobfuscator
-- linkfinder
-- xnLinkFinder
-- getjswords
-- sourcemapper
-- linx
-- jsluice
+- [subjs](https://github.com/lc/subjs)
+- [getJS](https://github.com/003random/getJS)
+- [jscrawler](https://github.com/rix4uni/jscrawler)
+- [jsfinder](https://github.com/kacakb/jsfinder)
+- [linkfinder](https://github.com/GerbenJavado/LinkFinder)
+- [xnLinkFinder](https://github.com/xnl-h4ck3r/xnLinkFinder)
+- [sourcemapper](https://github.com/denandz/sourcemapper)
+- [linx](https://github.com/riza/linx)
+- [jsluice](https://github.com/BishopFox/jsluice)
 
 ### Hidden Parameter
-- paramfinder
-- msarjun
-- x8
+- [paramfinder](https://github.com/rix4uni/paramfinder)
+- [msarjun](https://github.com/rix4uni/msarjun)
+- [x8](https://github.com/Sh1Yo/x8)
 
 ### Program Based Wordlist Generator
-- cewl
-- unfurl
-- cook
-- pydictor
+- [unfurl](https://github.com/tomnomnom/unfurl)
 
 ### Subdomain Takeover
-- subzy
-- nuclei
+- [subzy](https://github.com/rix4uni/subzy)
+- [nuclei](https://github.com/projectdiscovery/nuclei)
 
 ### MX Takeover
-- mx-takeover
+- [mx-takeover](https://github.com/musana/mx-takeover)
 
 ### DNS takeover
-- dnstake
+- [dnstake](https://github.com/pwnesia/dnstake)
 
 ### Zone Transfer
-- dig
+- dig (built-in system tool)
 
 ### Vulnerability Scanning
-- ftpx
-- sshx
-- s3scanner
-- vulntechx
-- pvreplace
-- xsschecker
-- pyxss
-- gosqli
-- commix
-- goop
-- pdftotext
-- trufflehog
-- secretfinder
-- mantra
-- shortscan
-- linkinspector
-- brutespray
+- [ftpx](https://github.com/rix4uni/ftpx)
+- [s3scanner](https://github.com/sa7mon/s3scanner)
+- [vulntechfinder](https://github.com/rix4uni/vulntechfinder)
+- [pvreplace](https://github.com/rix4uni/pvreplace)
+- [xsschecker](https://github.com/rix4uni/xsschecker)
+- [pyxss](https://github.com/rix4uni/pyxss)
+- [gosqli](https://github.com/rix4uni/gosqli)
+- [commix](https://github.com/commixproject/commix)
+- [goop](https://github.com/nyancrimew/goop)
+- [trufflehog](https://github.com/trufflesecurity/trufflehog)
+- [mantra](https://github.com/MrEmpy/mantra)
+- [shortscan](https://github.com/bitquark/shortscan)
+- [linkinspector](https://github.com/rix4uni/linkinspector)
+- [brutespray](https://github.com/x90skysn3k/brutespray)
 
 ## Thanks 🙏
 _Thanks for creating awesome tools_
