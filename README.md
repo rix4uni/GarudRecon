@@ -131,69 +131,6 @@ bash configure
 ## Usage
 
 <details>
-  <summary><b>GarudRecon Help</b></summary>
-
-```yaml
-GarudRecon is a comprehensive bash-based reconnaissance automation framework that streamlines the asset discovery and vulnerability assessment process for security professionals and bug bounty hunters. This tool orchestrates over 80+ open-source security tools to provide thorough reconnaissance capabilities across multiple attack vectors.
-
-Usage:
-  garudrecon [command]
-
-Available Commands:
-  install                 Install the tool and all required dependencies.
-  smallscope              Quick recon for a single host or subdomain (e.g. support.domain.com).
-  mediumscope             Moderate recon for a wildcard domain (e.g. *.domain.com) with optional vuln checks.
-  largescope              Full-scale recon for an organization.
-  cidrscope               Run a full scan against one or more CIDR ranges.
-  workflow                Chain multiple tools into a reusable pipeline so you can run complex scans with a single command.
-  fleet                   Distribute work across many VPS instances — split input automatically and run modules in parallel on 100+ hosts.
-  cronjobs                Schedule and monitor recurring recon tasks (subdomains, open ports, JS leaks, templates, alerts).
-
-Flags:
-  -h, --help     help for garudrecon
-  -v, --version  Display the current version
-
-Use "garudrecon [command] --help" for more information about a command.
-```
-</details>
-
-
-<details>
-  <summary><b>GarudRecon Install</b></summary>
-
-```yaml
-Install the tool and all required dependencies.
-Runs setup tasks and installs any system or language packages your tool needs so you can start scanning immediately.
-
-Usage:
-  garudrecon install [flags]
-
-Flags:
-  -f, --function        Function to run (e.g. MEDIUMSCOPE)
-  -c, --config          Custom configuration file path
-  -up, --update         Update all tools to latest version
-  -v, --verbose         enable verbose mode
-  -h, --help            help for install
-
-Example:
-  garudrecon install -f SMALLSCOPE
-  garudrecon install -f MEDIUMSCOPE
-  garudrecon install -f LARGESCOPE
-  garudrecon install -f CIDRSCOPE
-  garudrecon install -f WORKFLOW
-  garudrecon install -f FLEET
-  garudrecon install -f CRONJOBS
-  garudrecon install -f ALL
-  garudrecon install -f ALL --update
-```
-
-
-#### Output
-<img src="img/output/install.png"/>
-</details>
-
-
-<details>
   <summary><b>SmallScope Mode</b></summary>
 
 ```yaml
@@ -523,55 +460,6 @@ gc="garudrecon cronjobs"
 | Windows    | ✅       | ✅          | WSL Ubuntu     |
 | MacOS      | ✅       | ✅          | ❌             |
 | Arch Linux | ✅       | ❌          | ❌             |
-
-## Default Excluded Functions, You can change if you want
-
-| NAME                      | 1GB RAM | 2GB RAM | 4GB RAM | 6GB RAM | 8GB RAM | 16GB RAM |
-| ------------------------- | ------- | ------- | ------- | ------- | ------- | -------- |
-| BBOT                      | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| ONEFORALL                 | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| KAEFERJAEGER              | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| TRICKESTCLOUD             | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| DNSXBRUTE                 | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| SUBWIZ                    | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| RECURSIVESUBENUM          | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| ALTDNS                    | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| PUREDNS                   | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| ALTERX                    | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| GOTATOR                   | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| DNSGEN                    | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| GOALTDNS                  | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| RIPGEN                    | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| DMUT                      | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| DNSCEWL                   | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| ALLSUBDOMAINPERMUTATIONS  | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| MANUAL_SUBDOMAIN_RESOLVING| ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| PUREDNS                   | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| SHUFFLEDNS                | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| MASSDNS                   | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| FFUFBRUTE                 | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| FFUFVHOST                 | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| GOWITNESS                 | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| AQUATONE                  | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| EYEWITNESS                | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| HTTPX_SS                  | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| FFUFDIRENUM               | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| DIRSEARCH                 | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| FEROXBUSTER               | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| WFUZZ                     | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| CRAWLEY                   | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| GALER                     | ❌      | ❌     | ❌      | ❌     | ❌      | ❌      |
-| MSARJUN                   | ❌      | ✅     | ✅      | ✅     | ✅      | ✅      |
-| X8                        | ❌      | ✅     | ✅      | ✅     | ✅      | ✅      |
-| CEWL                      | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| UNFURL                    | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| CUSTOM_PARAM              | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| COOK                      | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| PYDICTOR                  | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| FFUF_CUSTOM_PARAM         | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| VULNTECHX                 | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-| PYXSS                     | ❌      | ❌     | ✅      | ✅     | ✅      | ✅      |
-
 
 ## Tools
 
