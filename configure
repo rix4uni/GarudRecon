@@ -65,12 +65,6 @@ echo -e "${YELLOW}Configuration file:${NC} ${GREEN}$CONFIG${NC} (auto-detects RA
 
 echo -e "\n${BOLD}${CYAN}==> API Keys Configuration${NC} ${YELLOW}(Optional but highly recommended)${NC}"
 echo -e "${GREEN}Add your API keys to:${NC} ${GREEN}$HOME/.config${NC}"
-if [[ -d "$HOME/.config" ]] && [[ -n "$(find "$HOME/.config" -type f 2>/dev/null | head -1)" ]]; then
-    echo -e "${YELLOW}Configuration files location:${NC}"
-    find "$HOME/.config" -type f 2>/dev/null | head -10 | while read -r file; do
-        echo -e "  ${GREEN}~/${file#$HOME/}${NC}"
-done
-fi
 
 echo -e "\n${BOLD}${CYAN}==> Restore from Backup (GitHub)${NC}"
 echo -e "${BLUE}git clone https://<TOKEN>@github.com/yourusername/private-config.git --depth 1${NC}"
