@@ -13,7 +13,6 @@ github.com/rix4uni/wordgen
 
 
 
-oneforall
-
+github.com/shmilylty/OneForAll
 
 

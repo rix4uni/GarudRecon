@@ -422,7 +422,9 @@ NUCLEIHUB_TEMPLATES(){
     git clone https://github.com/rix4uni/nucleihub-templates.git --depth 1 $ROOT_WORDLISTDIR/nucleihub-templates &>/dev/null
 }
 
-# Passive Subdomain Enumeration
+###############################################################################################################
+###################################### PASSIVE SUBDOMAIN ENUMERATION ##########################################
+###############################################################################################################
 BUGBOUNTYDATA(){
 	START_SPINNER "${BGREEN}BUGBOUNTYDATA${RESET}"
 
@@ -602,7 +604,7 @@ HAKTRAILSFREE(){
         esac
     fi
 
-    # echo ${TARGET} | haktrailsfree --silent --cookiefile ~/.config/haktrailsfree/cookie.txt | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/haktrailsfree.subs
+    echo ${TARGET} | haktrailsfree --silent --cookiefile ~/.config/haktrailsfree/cookie.txt | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/haktrailsfree.subs
 
     # Display the count of lines in securitytrails.subs
     echo -e "${BGREEN}[+] HAKTRAILSFREE${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/securitytrails.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
@@ -732,21 +734,6 @@ IPFINDER(){
 	echo -e "${BGREEN}[+] IPFINDER${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/ips.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
-IPRANGES(){
-	START_SPINNER "${BGREEN}IPRANGES${RESET}"
-
-	if ! command -v ipranges &>/dev/null; then
-        echo -e "${BRED}[x] IPRANGES${RESET}: 0, ${TIME} seconds"
-        STOP_SPINNER
-        return
-    fi
-
-	echo "$TARGET" | ipranges -silent | unew -el -t -q ${SUBDOMAINDIR}/ipranges.txt
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] IPRANGES${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/ipranges.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
 ASNMAP(){
 	START_SPINNER "${BGREEN}ASNMAP${RESET}"
 
@@ -783,7 +770,9 @@ UDON(){
 }
 
 
-# Cloud Recon
+###############################################################################################################
+############################################## CLOUD RECON ###################################################
+###############################################################################################################
 KAEFERJAEGER(){
 	START_SPINNER "${BGREEN}KAEFERJAEGER${RESET}"
 
@@ -807,7 +796,9 @@ TRICKESTCLOUD(){
 }
 
 
-# Certificate Transperency
+###############################################################################################################
+####################################### CERTIFICATE TRANSPERENCY ##############################################
+###############################################################################################################
 CERO(){
 	START_SPINNER "${BGREEN}CERO${RESET}"
 
@@ -833,7 +824,9 @@ CERTINFO(){
 }
 
 
-# Content Security Policy
+###############################################################################################################
+####################################### CONTENT SECURITY POLICY ###############################################
+###############################################################################################################
 CSPRECON(){
 	START_SPINNER "${BGREEN}CSPRECON${RESET}"
 
@@ -919,14 +912,42 @@ RECURSIVESUBENUM(){
 
 	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | subfinder -duc -silent -all -config ~/.config/subfinder/config.yaml -pc ~/.config/subfinder/provider-config.yaml -max-time ${SUBFINDER_ENUM_TIMEOUT} | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
 
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | amass enum -nocolor -nolocaldb -passive -norecursive -noalts -config ~/.config/amass/config.ini -timeout ${AMASS_ENUM_TIMEOUT} 2>/dev/null | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
 
-	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | haktrails subdomains
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | subdog --silent --source all | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | xsubfind3r --silent | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | findomain -q | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | chaos -duc -silent -key $(shuf -n 1 ~/.config/chaos/chaos-api.txt) | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "github-subdomains -d _target_ -t ~/.config/github-subdomains/.github_tokens -o _output_/_cleantarget_.subs" -o ${SUBDOMAINDIR}/tmp-github-subdomains 2>/dev/null
+	cat ${SUBDOMAINDIR}/tmp-github-subdomains/*.subs 2>/dev/null | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs && rm -rf ${SUBDOMAINDIR}/tmp-github-subdomains
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | assetfinder --subs-only | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | shosubgo -s $(shuf -n 1 ~/.config/shosubgo/shosubgo-api.txt) | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | haktrails subdomains | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "bbot --silent -t _target_ -f subdomain-enum -rf passive -n bbot_scan -o _output_ -y" -o ${SUBDOMAINDIR}/tmp-bbot 2>/dev/null
+	cat ${SUBDOMAINDIR}/tmp-bbot/*/subdomains.txt 2>/dev/null | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs && rm -rf ${SUBDOMAINDIR}/tmp-bbot
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "tools/OneForAll/oneforall.py --target _target_ --brute False --dns False --req False --alive False --takeover False --fmt json --path _output_/_cleantarget_-oneforall.json run" -o ${SUBDOMAINDIR}/tmp-oneforall 2>/dev/null
+	cat ${SUBDOMAINDIR}/tmp-oneforall/*.json 2>/dev/null | jq -r '.[].subdomain' | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs && rm -rf ${SUBDOMAINDIR}/tmp-oneforall
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | haktrailsfree --silent --cookiefile ~/.config/haktrailsfree/cookie.txt | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
+
+	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | analyticsrelationships | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/recursivesubenum.subs
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] RECURSIVESUBENUM${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/recursivesubenum.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	echo -e "${BGREEN}[+] RECURSIVESUBENUM${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/recursivesubenum.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
-# Subdomain Permutations
+###############################################################################################################
+####################################### SUBDOMAIN PERMUTATIONS ###############################################
+###############################################################################################################
 ALTDNS(){
 	START_SPINNER "${BGREEN}ALTDNS${RESET}"
 
@@ -1002,7 +1023,9 @@ ALLSUBDOMAIN_PERMUTATIONS(){
 }
 
 
-# Subdomain Resolving
+###############################################################################################################
+####################################### SUBDOMAIN RESOLVING ##################################################
+###############################################################################################################
 PUREDNS_RESOLVE(){
 	START_SPINNER "${BGREEN}PUREDNS${RESET}"
 
@@ -1045,7 +1068,9 @@ ALLSUBDOMAIN_RESOLVING(){
 }
 
 
-# Subdomain DNS Enumeration
+###############################################################################################################
+#################################### SUBDOMAIN DNS ENUMERATION ###############################################
+###############################################################################################################
 DNSX(){
 	START_SPINNER "${BGREEN}DNSX${RESET}"
 
@@ -1056,7 +1081,9 @@ DNSX(){
 }
 
 
-# Port Scanning
+###############################################################################################################
+########################################### PORT SCANNING ###################################################
+###############################################################################################################
 PORTMAP(){
 	START_SPINNER "${BGREEN}PORTMAP${RESET}"
 
@@ -1104,7 +1131,9 @@ NMAP(){
 }
 
 
-# Subdomain Probing
+###############################################################################################################
+####################################### SUBDOMAIN PROBING ####################################################
+###############################################################################################################
 HTTPX(){
 	START_SPINNER "${BGREEN}HTTPX${RESET}"
 
@@ -1123,7 +1152,9 @@ HTTPX(){
 }
 
 
-# Subdomain Bruteforcing
+###############################################################################################################
+#################################### SUBDOMAIN BRUTEFORCING ##################################################
+###############################################################################################################
 FFUFBRUTE(){
 	START_SPINNER "${BGREEN}FFUFBRUTE${RESET}"
 
@@ -1180,7 +1211,9 @@ FFUFBRUTE(){
 }
 
 
-# VHOST Dicovery
+###############################################################################################################
+####################################### VHOST DISCOVERY ######################################################
+###############################################################################################################
 FFUFVHOST(){
 	START_SPINNER "${BGREEN}FFUFBRUTE${RESET}"
 
@@ -1216,7 +1249,9 @@ FFUFVHOST(){
 }
 
 
-# Favicon Lookup
+###############################################################################################################
+####################################### FAVICON LOOKUP ######################################################
+###############################################################################################################
 FAVINFO(){
 	START_SPINNER "${BGREEN}FAVINFO${RESET}"
 
@@ -1236,7 +1271,9 @@ FAVIRECON(){
 }
 
 
-# Screenshotting
+###############################################################################################################
+####################################### SCREENSHOTTING #######################################################
+###############################################################################################################
 GOWITNESS(){
 	START_SPINNER "${BGREEN}GOWITNESS${RESET}"
 
@@ -1282,7 +1319,9 @@ HTTPX_SS(){
 }
 
 
-# Directory Enumeration
+###############################################################################################################
+#################################### DIRECTORY ENUMERATION ###################################################
+###############################################################################################################
 FFUFDIRENUM(){
 	START_SPINNER "${BGREEN}FFUFDIRENUM${RESET}"
 
@@ -1318,7 +1357,9 @@ WFUZZ(){
 }
 
 
-# Email Enumeration
+###############################################################################################################
+####################################### EMAIL ENUMERATION ####################################################
+###############################################################################################################
 EMAILFINDER(){
 	START_SPINNER "${BGREEN}EMAILFINDER${RESET}"
 
@@ -1350,7 +1391,9 @@ EMAILEXTRACTOR(){
 }
 
 
-# Url Crawling
+###############################################################################################################
+####################################### URL CRAWLING #########################################################
+###############################################################################################################
 WAYMORE(){
 	START_SPINNER "${BGREEN}WAYMORE${RESET}"
 
@@ -1582,7 +1625,9 @@ ROBOTXT(){
 	echo -e "${BGREEN}[+] ROBOTXT${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/robotxt.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
-# Google Dorking
+###############################################################################################################
+####################################### GOOGLE DORKING #######################################################
+###############################################################################################################
 AUTOMATED_GOOGLE_DORKING(){
 	START_SPINNER "${BGREEN}AUTOMATED_GOOGLE_DORKING${RESET}"
 
@@ -1714,7 +1759,9 @@ BURPSUITE(){
     echo -e "${BGREEN}[+] BURPSUITE${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/burpsuite.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
-# JS Crawling
+###############################################################################################################
+####################################### JS CRAWLING ###########################################################
+###############################################################################################################
 SUBJS(){
 	START_SPINNER "${BGREEN}SUBJS${RESET}"
 
@@ -1831,7 +1878,9 @@ JSLUICE(){
 }
 
 
-# Hidden Parameter
+###############################################################################################################
+####################################### HIDDEN PARAMETER #####################################################
+###############################################################################################################
 PARAMFINDER(){
 	START_SPINNER "${BGREEN}PARAMFINDER${RESET}"
 
@@ -1987,7 +2036,9 @@ MANUAL_ALLURLS_FILTER(){
 }
 
 
-# Program Based Wordlist Generator
+###############################################################################################################
+############################### PROGRAM BASED WORDLIST GENERATOR #############################################
+###############################################################################################################
 CEWL(){
 	START_SPINNER "${BGREEN}CEWL${RESET}"
 
@@ -2023,7 +2074,9 @@ COOK(){
 }
 
 
-# Password Dictionary Generation
+###############################################################################################################
+################################ PASSWORD DICTIONARY GENERATION ##############################################
+###############################################################################################################
 PYDICTOR(){
 	START_SPINNER "${BGREEN}PYDICTOR${RESET}"
 
@@ -2032,7 +2085,9 @@ PYDICTOR(){
 }
 
 
-# Parameter Fuzzing
+###############################################################################################################
+####################################### PARAMETER FUZZING ####################################################
+###############################################################################################################
 FFUF_CUSTOM_PARAM(){
 	START_SPINNER "${BGREEN}FFUF_CUSTOM_PARAM${RESET}"
 
@@ -2044,7 +2099,9 @@ FFUF_CUSTOM_PARAM(){
 }
 
 
-# Subdomain Takeover
+###############################################################################################################
+####################################### SUBDOMAIN TAKEOVER ###################################################
+###############################################################################################################
 SUBZY(){
 	START_SPINNER "${BGREEN}SUBZY${RESET}"
 
@@ -2063,7 +2120,9 @@ NUCLEI(){
 	echo -e "${BGREEN}[+] NUCLEI${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/nuclei.takeover || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
-# MX Takeover
+###############################################################################################################
+####################################### MX TAKEOVER ###########################################################
+###############################################################################################################
 MXTAKEOVER(){
 	START_SPINNER "${BGREEN}MXTAKEOVER${RESET}"
 
@@ -2073,7 +2132,9 @@ MXTAKEOVER(){
 	echo -e "${BGREEN}[+] MXTAKEOVER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/mxtakeover.takeover || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
-# DNS takeover
+###############################################################################################################
+####################################### DNS TAKEOVER ##########################################################
+###############################################################################################################
 DNSTAKE(){
 	START_SPINNER "${BGREEN}DNSTAKE${RESET}"
 
@@ -2083,7 +2144,9 @@ DNSTAKE(){
 	echo -e "${BGREEN}[+] DNSTAKE${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/dnstake.takeover || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
-# Zone Transfer
+###############################################################################################################
+####################################### ZONE TRANSFER ########################################################
+###############################################################################################################
 DIG(){
 	START_SPINNER "${BGREEN}DIG${RESET}"
 
@@ -2092,7 +2155,9 @@ DIG(){
 }
 
 
-# Vulnerability Scanning
+###############################################################################################################
+#################################### VULNERABILITY SCANNING ##################################################
+###############################################################################################################
 FTP(){
 	START_SPINNER "${BGREEN}FTP${RESET}"
 
@@ -2483,7 +2548,9 @@ SWAGGERUI(){
 }
 
 
-# URLs Secrets
+###############################################################################################################
+####################################### URLS SECRETS #########################################################
+###############################################################################################################
 LINKINSPECTOR(){
 	START_SPINNER "${BGREEN}LINKINSPECTOR${RESET}"
 
@@ -2505,7 +2572,9 @@ LINKINSPECTOR(){
 }
 
 
-# Password spraying
+###############################################################################################################
+####################################### PASSWORD SPRAYING ####################################################
+###############################################################################################################
 BRUTESPRAY(){
 	START_SPINNER "${BGREEN}BRUTESPRAY${RESET}"
 
@@ -2517,7 +2586,9 @@ BRUTESPRAY(){
 }
 
 
-# Delete TMPDIR files
+###############################################################################################################
+####################################### DELETE TMPDIR FILES ##################################################
+###############################################################################################################
 DELETE_TMPDIR(){
 	START_SPINNER "${BGREEN}DELETE_TMPDIR${RESET}"
 
@@ -2558,7 +2629,6 @@ RECON(){
 	run "ARINRANGE"
 	run "SPK"
 	run "IPFINDER"
-	# run "IPRANGES"
 	# run "ASNMAP"
 	# run "ANALYTICSRELATIONSHIPS"
 	# run "UDON"
@@ -2728,7 +2798,6 @@ if [[ "$RECON_SUBDOMAIN" == true ]]; then
 	run "ARINRANGE"
 	run "SPK"
 	run "IPFINDER"
-	# run "IPRANGES"
 	# run "ASNMAP"
 	# run "ANALYTICSRELATIONSHIPS"
 	# run "UDON"
@@ -2861,7 +2930,6 @@ else
 	run "ARINRANGE"
 	run "SPK"
 	run "IPFINDER"
-	# run "IPRANGES"
 	# run "ASNMAP"
 	# run "ANALYTICSRELATIONSHIPS"
 	# run "UDON"

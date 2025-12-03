@@ -70,6 +70,10 @@ echo -e "\n${BOLD}${CYAN}==> Restore from Backup (GitHub)${NC}"
 echo -e "${BLUE}git clone https://<TOKEN>@github.com/yourusername/private-config.git --depth 1${NC}"
 echo -e "${BLUE}cp -r private-config/* $HOME/.config && rm -rf private-config${NC}"
 
+echo -e "\n${BOLD}${CYAN}==> Zoxide Configuration${NC} ${YELLOW}(Optional but recommended)${NC}"
+echo -e "${GREEN}Add common directories to zoxide for faster navigation:${NC}"
+echo -e "${BLUE}zpath_add ~/.config ~/.garudrecon${NC}"
+
 echo -e "\n${BOLD}${RED}==> IMPORTANT: Blind XSS Configuration${NC} ${YELLOW}(Required and highly recommended)${NC}"
 echo -e "${RED}⚠ WARNING:${NC} ${YELLOW}If you don't configure bxssreplace, all blind XSS notifications will be sent to rix4uni!${NC}"
 echo -e "${GREEN}Replace 'myezxssuser' with your own bxss username:${NC}"
