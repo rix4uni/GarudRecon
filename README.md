@@ -113,113 +113,17 @@ Afterwards, I experimented with rewriting GarudRecon in **Python** and **Go**, b
 
 ```
 
-### Easy Install `Recommended`
+### Using Git Clone
 ```
-bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure) --update
+git clone --depth 1 https://github.com/rix4uni/GarudRecon.git
+cd GarudRecon
+bash configure
 ```
-
-<details>
-  <summary><b>✅ Configure Examples:</b></summary>
-
-```yaml
-👉 Installtion modes:
-echo "Choose installation scope:"
-echo "1) SMALLSCOPE"
-echo "2) MEDIUMSCOPE"
-echo "3) LARGESCOPE"
-echo "4) CIDRSCOPE"
-echo "5) WORKFLOW"
-echo "6) FLEET"
-echo "7) CRONJOBS"
-echo "8) ALL (default)"
-
-👉 Non-interactive without update:
-bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure) 5
-# Executes: garudrecon install -f CRONJOBS
-
-👉 Non-interactive with update:
-bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure) 5 --update
-# Executes: garudrecon install -f CRONJOBS --update
-
-👉 Interactive mode (no args):
-bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure)
-# Interactive prompts as before
-```
-</details>
-
-<details>
-  <summary><b>✅ Discord Webhook Setup</b></summary>
-
-```yaml
-👉 Add all discord webhook url in ~/.config/notify/provider-config.yaml:
-discord:
-  - id: "manualcheck"
-    discord_channel: "manualcheck"
-    discord_username: "manualcheck"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-
-  - id: "subdomain"
-    discord_channel: "subdomain"
-    discord_username: "subdomain"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-
-  - id: "ports"
-    discord_channel: "ports"
-    discord_username: "ports"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-
-  - id: "alivesubdomain"
-    discord_channel: "alivesubdomain"
-    discord_username: "alivesubdomain"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-
-  - id: "javascript"
-    discord_channel: "javascript"
-    discord_username: "javascript"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-
-  - id: "javascriptleaks"
-    discord_channel: "javascriptleaks"
-    discord_username: "javascriptleaks"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-
-  - id: "xss"
-    discord_channel: "xss"
-    discord_username: "xss"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-
-  - id: "allvuln"
-    discord_channel: "allvuln"
-    discord_username: "allvuln"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-
-  - id: "scanfinished"
-    discord_channel: "scanfinished"
-    discord_username: "scanfinished"
-    discord_format: "{{data}}"
-    discord_webhook_url: ""
-```
-</details>
 
 ### Download prebuilt binaries
 ```
 wget -q https://github.com/rix4uni/GarudRecon/archive/refs/tags/v0.1.2.zip
 unzip v0.1.2.zip
-cd GarudRecon
-bash configure
-```
-
-### Using Git Clone
-```
-git clone --depth 1 https://github.com/rix4uni/GarudRecon.git
 cd GarudRecon
 bash configure
 ```
