@@ -9,11 +9,31 @@
 <a href="https://github.com/rix4uni/GarudRecon/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
 <a href="#"><img src="https://img.shields.io/badge/Made%20with-Bash-1f425f.svg"></a>
 <a href="https://github.com/rix4uni?tab=followers"><img src="https://img.shields.io/badge/github-%40rix4uni-orange"></a>
+<a href="https://github.com/rix4uni/GarudRecon/stargazers"><img src="https://img.shields.io/github/stars/rix4uni/GarudRecon?style=social"></a>
+<a href="https://github.com/rix4uni/GarudRecon/forks"><img src="https://img.shields.io/github/forks/rix4uni/GarudRecon?style=social"></a>
 </p>
 
 ## GarudRecon
 
 GarudRecon is a comprehensive bash-based reconnaissance automation framework that streamlines the asset discovery and vulnerability assessment process for security professionals and bug bounty hunters. This tool orchestrates over 80+ open-source security tools to provide thorough reconnaissance capabilities across multiple attack vectors.
+
+## Table of Contents
+
+- [Core Capabilities](#core-capabilities)
+- [Flexible Reconnaissance Modes](#flexible-reconnaissance-modes)
+- [Advanced Features](#advanced-features)
+- [History](#history)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
+- [Contributing](#contributing)
+- [Operating Systems Supported](#operating-systems-supported)
+- [Tools](#tools)
+- [Thanks](#thanks-)
 
 ### Core Capabilities
 GarudRecon excels in automated discovery and vulnerability detection across several key areas:
@@ -38,7 +58,7 @@ The framework provides three distinct operational modes tailored to different en
 - **SmallScope Mode** - Designed for focused subdomain reconnaissance (e.g., support.domain.com) with deep vulnerability analysis on a limited attack surface.
 - **MediumScope Mode** - Comprehensive wildcard domain scanning (e.g., *.domain.com) with balanced coverage and performance optimization.
 - **LargeScope Mode** - Organization-wide reconnaissance for maximum asset discovery and extensive vulnerability coverage.
-- **CidrScope Mode** - Not completed yet
+- **CidrScope Mode** - ⚠️ Coming Soon - CIDR-based reconnaissance for IP range scanning
 - **Workflow Mode** - Chain multiple tools into a reusable pipeline so you can run complex scans with a single command.
 - **Fleet Mode** - Distribute work across many VPS instances — split input automatically and run modules in parallel on 100+ hosts.
 - **CronJobs Mode** - Schedule and monitor recurring recon tasks (subdomains, open ports, JS leaks, templates, alerts).
@@ -61,7 +81,20 @@ I originally created **GarudRecon** in 2022, but I later removed it after some A
 
 Afterwards, I experimented with rewriting GarudRecon in **Python** and **Go**, but I found the heavy string concatenation in those languages unappealing. In the end, I decided to return to **Bash**, which felt simpler and more natural for me.
 
+## Prerequisites
+
+Before installing GarudRecon, ensure you have:
+
+- **Root access** (switch to root user, not `sudo su`)
+- **Bash shell** (verify with `echo $SHELL`)
+- **Internet connection** for downloading tools and dependencies
+- **Minimum 4GB RAM** (8GB+ recommended for large scans)
+- **Sufficient disk space** (at least 40GB free for tools and output)
+
 ## Referral Links
+
+<details>
+  <summary><b>Click to view cloud provider referral links</b></summary>
 
 <p align="center">
 <a href="https://m.do.co/c/43c704381b79" target="_blank">
@@ -98,6 +131,7 @@ Afterwards, I experimented with rewriting GarudRecon in **Python** and **Go**, b
 <img src="img/referrals/intechdc.png"/>
 </a>
 </p>
+</details>
 
 ## Installation
 
@@ -109,9 +143,7 @@ Afterwards, I experimented with rewriting GarudRecon in **Python** and **Go**, b
 > Make sure your shell is set to **bash**.
 
 ### Docker
-```
-
-```
+> **Note:** Docker support is coming soon. For now, please use the Git Clone or prebuilt binaries installation method.
 
 ### Using Git Clone
 ```
@@ -126,6 +158,45 @@ wget -q https://github.com/rix4uni/GarudRecon/archive/refs/tags/v0.1.2.zip
 unzip v0.1.2.zip
 cd GarudRecon
 bash configure
+```
+
+## Quick Start
+
+After installation, you can immediately start using GarudRecon:
+
+```bash
+# Small scope scan (single subdomain)
+garudrecon smallscope -d support.example.com
+
+# Medium scope scan (wildcard domain)
+garudrecon mediumscope -d example.com
+
+# Large scope scan (organization-wide)
+garudrecon largescope -d example
+
+# Workflow mode
+garudrecon workflow ls
+
+# CronJobs mode
+garudrecon cronjobs -d example.com -f MONITOR_SUBDOMAIN
+```
+
+For more detailed usage examples, see the [Usage](#usage) section below.
+
+## Configuration
+
+GarudRecon uses configuration files located in `configuration/` directory. The main configuration file is `garudrecon.cfg`.
+
+### Key Configuration Options
+
+- **API Keys**: Configure API keys for various services (subfinder, amass, chaos, etc.)
+- **Thread Limits**: Adjust parallel processing threads based on your system resources
+- **Output Directories**: Customize where scan results are stored
+- **Tool Paths**: Specify custom paths if tools are installed in non-standard locations
+
+To use a custom configuration file:
+```bash
+garudrecon mediumscope -d example.com -c /path/to/custom.cfg
 ```
 
 ## Usage
@@ -303,10 +374,17 @@ Example:
 <details open>
   <summary><b>CidrScope Mode</b></summary>
 
-```
-```
+> **⚠️ Coming Soon:** CIDR-based reconnaissance mode for IP range scanning is currently under development.
+
+This mode will allow you to:
+- Scan entire CIDR ranges for open ports and services
+- Discover assets within IP ranges
+- Perform vulnerability assessments on IP-based targets
+
+Stay tuned for updates!
 
 #### Output
+_Coming soon_
 </details>
 
 
@@ -337,8 +415,11 @@ Example:
   garudrecon workflow delete [module]
 ```
 
-Check invalid
-```yaml
+### Validating Workflow Modules
+
+To check if all workflow module JSON files are valid:
+
+```bash
 for f in modules/*.json; do
   echo -n "Checking $f ... "
   jq empty "$f" && echo "✅ OK" || echo "❌ INVALID"
@@ -355,7 +436,7 @@ done
 <details open>
   <summary><b>Fleet Mode</b></summary>
 
-## This is temporary setup for now in next update i'll add progress bar
+> **Note:** This is a temporary setup. Progress bar and enhanced monitoring features will be added in the next update.
 ```yaml
 ## Add passwords like this to avoid single/double quotes problem, you can use https://codepen.io/rix4uni/pen/PwZzdpV
 4fd6dbe0Haafa1d7bf4df9f96597e48p
@@ -450,6 +531,91 @@ gc="garudrecon cronjobs"
 
 ## Demo
 
+> **Note:** Demo videos and screenshots coming soon. Check the [Usage](#usage) section for output examples.
+
+For visual demonstrations, see the output screenshots in each mode's section above.
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue: Permission denied errors**
+- **Solution:** Make sure you're running as root user (not using `sudo su`). Switch to root with `su -` or `sudo -i`.
+
+**Issue: Tools not installing**
+- **Solution:** Install failed tools manually. Check the installation logs for specific errors. Ensure you have internet connectivity and sufficient disk space.
+
+**Issue: Bash not found**
+- **Solution:** Verify your shell is bash: `echo $SHELL`. If not, switch to bash: `bash` or `chsh -s /bin/bash`.
+
+**Issue: Scan stops or hangs**
+- **Solution:** Check system resources (RAM, disk space). Use `-ef` flag to exclude problematic functions. Use `--resume` to continue interrupted scans.
+
+**Issue: API rate limits**
+- **Solution:** Configure API keys in the configuration file to increase rate limits. Some tools have free tier limitations.
+
+### Getting Help
+
+- Check existing [Issues](https://github.com/rix4uni/GarudRecon/issues)
+- Create a new issue with:
+  - Error messages
+  - Command used
+  - System information
+  - Relevant logs
+
+## FAQ
+
+**Q: Do I need to install all tools manually?**  
+A: No, the `configure` script automatically installs most tools. If any tool fails, you'll need to install it manually.
+
+**Q: Can I run scans without root access?**  
+A: Some tools require root access for certain operations (like port scanning). It's recommended to run as root.
+
+**Q: How long do scans typically take?**  
+A: Scan duration is highly variable and depends on many factors:
+- **Target size**: Number of subdomains, endpoints, and assets discovered
+- **Enabled tools**: Which functions are included/excluded (via `-ef` flag or `DEFAULT_EXCLUDE_FUNCS` in config)
+- **Scan modes**: NORMAL vs ADVANCED modes for various tools (configured in `garudrecon.cfg`)
+- **TIMELIMITX settings**: Time limits set for individual tools (e.g., `WAYMORE_TIMELIMITX="1h"`)
+- **RAM profile**: System RAM determines which tools run (1g/2g profiles exclude many tools)
+- **System resources**: CPU, RAM, disk I/O, and network speed
+- **API rate limits**: Some tools are limited by API quotas
+
+A small target with minimal tools might complete in minutes, while a large organization scan with all tools enabled could take days. Check your configuration file (`garudrecon.cfg`) to see which tools and modes are active.
+
+**Q: Can I pause and resume scans?**  
+A: Yes! Use the `--resume` flag with the scan folder name to continue interrupted scans.
+
+**Q: How do I exclude specific tools from running?**  
+A: Use the `-ef` flag: `garudrecon mediumscope -d example.com -ef "AMASS,SUBFINDER"`
+
+**Q: Where are scan results stored?**  
+A: Results are stored in `/root/.garudrecon/scans/<domain>/` by default.
+
+**Q: Can I customize which vulnerability checks run?**  
+A: Yes, use flags like `-rx` for XSS, `-rs` for SQLi, `-rl` for LFI, etc. See the [Usage](#usage) section for details.
+
+## Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. **Report Bugs**: Open an issue with detailed information
+2. **Suggest Features**: Share your ideas for improvements
+3. **Submit Pull Requests**: 
+   - Fork the repository
+   - Create a feature branch
+   - Make your changes
+   - Submit a pull request
+
+### Development Guidelines
+
+- Follow existing code style and conventions
+- Test your changes thoroughly
+- Update documentation as needed
+- Ensure backward compatibility when possible
+
+For more details, see [CONTRIBUTING.md](CONTRIBUTING.md) (if available) or open an issue to discuss your contribution.
+
 ## Operating Systems Supported
 
 | OS         | Supported | Easy Install | Tested        |
@@ -488,7 +654,7 @@ gc="garudrecon cronjobs"
 - builtwithsubs
 - whoxysubs
 
-### Certificate Transperency
+### Certificate Transparency
 - kaeferjaeger
 - trickestcloud
 - cero
@@ -667,7 +833,6 @@ _Thanks for creating awesome tools_
 - [waybackurls](https://github.com/tomnomnom/waybackurls)
 - [fff](https://github.com/tomnomnom/fff)
 - [meg](https://github.com/tomnomnom/meg)
-- [meg](https://github.com/tomnomnom/meg)
 - [anew](https://github.com/tomnomnom/anew)
 - [gron](https://github.com/tomnomnom/gron)
 - [unfurl](https://github.com/tomnomnom/unfurl)
@@ -770,6 +935,10 @@ _Thanks for creating awesome tools_
 - https://youtu.be/rbyifgOQIrc?t=17m38s
 
 ## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and updates.
+
+> **Note:** Changelog file coming soon. Check [releases](https://github.com/rix4uni/GarudRecon/releases) for version updates.
 
 ## Mindmap/Workflow
 _See Workflow in different format [Workflow](Workflow)_
