@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Default config file path
-CONFIG_PATH="configuration/garudrecon_max.cfg"
+CONFIG_PATH="configuration/garudrecon.cfg"
 
 TARGET=""
 
@@ -18,7 +18,7 @@ Usage:
   garudrecon cronjobs [flags]
 
 Flags:
-  -d, --domain			Domain to monitor
+  -d, --domain			Domain to monitor (or subdomains file, alive subdomains file, or URLs file)
   -f, --function		Function to run (e.g. MONITOR_SUBDOMAIN)
   -c, --config   		Custom configuration file path
   -i, --interval		Customize the sleep duration (e.g. 1800)
@@ -30,7 +30,9 @@ Example:
   garudrecon cronjobs -d domain.com -f MONITOR_PORTS
   garudrecon cronjobs -d domain.com -f MONITOR_ALIVESUBD
   garudrecon cronjobs -d domain.com -f MONITOR_JS
-  garudrecon cronjobs -d domain.com -f MONITOR_JSLEAKS
+  garudrecon cronjobs -d subdomains.txt -f MONITOR_JS (from subdomains file)
+  garudrecon cronjobs -d alivesubs.txt -f MONITOR_JS (from alive subdomains file)
+  garudrecon cronjobs -d urls.txt -f MONITOR_JS (from URLs file)
 EOF
 }
 
@@ -79,17 +81,19 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
-# Escape dots in domain for regex
-ESCAPED_TARGET=$(echo "$TARGET" | sed 's/\./\\./g')
-
 if [[ -z "$TARGET" ]]; then
     echo "Error: Target domain is required. Use -d <domain>"
     exit 1
 fi
 
-# Load configuration
+# Escape dots in domain for regex (will be recalculated in functions if needed)
+ESCAPED_TARGET=$(echo "$TARGET" | sed 's/\./\\./g')
+
+# Load configuration - check both possible locations
 if [[ -f "$CONFIG_PATH" ]]; then
     source "$CONFIG_PATH"
+elif [[ -f "$HOME/.garudrecon/configuration/garudrecon.cfg" ]]; then
+    source "$HOME/.garudrecon/configuration/garudrecon.cfg"
 else
     echo "Error: Configuration file '$CONFIG_PATH' not found."
     exit 1
@@ -208,82 +212,534 @@ MONITOR_SUBDOMAIN(){
 
 # Port Scanning
 MONITOR_PORTS(){
+	# Detect input type
+	local input_info=$(_detect_input_type "$TARGET")
+	local input_type=$(echo "$input_info" | cut -d'|' -f1)
+	local input_source=$(echo "$input_info" | cut -d'|' -f2)
+	local base_name=$(basename "$TARGET" .txt 2>/dev/null || echo "$TARGET")
+	base_name=$(basename "$base_name" .subs 2>/dev/null || echo "$base_name")
+	
+	# Run prerequisite functions WITHOUT starting MONITOR_PORTS spinner yet
+	# If domain provided, check if subdomains file exists first
+	if [[ "$input_type" == "domain" ]]; then
+		echo -e "${YELLOW}[~] Domain detected: ${TARGET}${RESET}"
+		# Check if subdomains file already exists
+		if [[ -s "${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs" ]]; then
+			echo -e "${YELLOW}[~] Using existing subdomains file: ${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs${RESET}"
+			input_source="${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs"
+			input_type="subdomains"
+			base_name="$TARGET"
+		else
+			echo -e "${YELLOW}[~] Subdomains file not found, running MONITOR_SUBDOMAIN first...${RESET}"
+			MONITOR_SUBDOMAIN
+			input_source="${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs"
+			input_type="subdomains"
+			base_name="$TARGET"
+		fi
+	fi
+	
+	# Now start MONITOR_PORTS spinner - only when we're actually doing MONITOR_PORTS work
 	START_SPINNER "${BGREEN}MONITOR_PORTS${RESET}"
 
-	echo -e "Saving file in ${CRONJOBS_PORTSIR}/${TARGET}.naabu"
-	if [[ ! -s "${CRONJOBS_PORTSIR}/${TARGET}.naabu" ]]; then
-	    cat ${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs | naabu -duc -silent -c ${NAABU_THREADS} -rate ${NAABU_RATELIMIT} -timeout ${NAABU_TIMEOUT} -retries ${NAABU_RETRIES} -top-ports 1000 2>/dev/null | unew -ef -el -i -t -q ${CRONJOBS_PORTSIR}/${TARGET}.naabu
+	# Determine output file
+	local output_file="${CRONJOBS_PORTSIR}/${base_name}.naabu"
+	local new_output_file="${CRONJOBS_PORTSIR}/${base_name}-new.naabu"
+	
+	echo -e "Saving file in ${output_file}"
+	
+	# Get input data
+	local input_data=""
+	case "$input_type" in
+		"subdomains")
+			input_data=$(cat "$input_source")
+			;;
+		*)
+			# Fallback: use subdomains file
+			if [[ -f "${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs" ]]; then
+				input_data=$(cat "${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs")
+			else
+				echo -e "${BRED}[x] MONITOR_PORTS - ERROR: No valid input source found${RESET}"
+				STOP_SPINNER
+				return
+			fi
+			;;
+	esac
+	
+	# Process port scanning
+	if [[ ! -s "${output_file}" ]]; then
+		echo "$input_data" | naabu -duc -silent -c ${NAABU_THREADS} -rate ${NAABU_RATELIMIT} -timeout ${NAABU_TIMEOUT} -retries ${NAABU_RETRIES} -top-ports 1000 2>/dev/null | unew -ef -el -i -t -q "${output_file}"
 	else
-		cat ${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs | naabu -duc -silent -c ${NAABU_THREADS} -rate ${NAABU_RATELIMIT} -timeout ${NAABU_TIMEOUT} -retries ${NAABU_RETRIES} -top-ports 1000 2>/dev/null | unew -ef -el -i -t ${CRONJOBS_PORTSIR}/${TARGET}.naabu | unew -ef -el -i -t ${CRONJOBS_PORTSIR}/${TARGET}-new.naabu | notify -silent -duc -bulk -id ${PORTS_NOTIFY} &>/dev/null
+		echo "$input_data" | naabu -duc -silent -c ${NAABU_THREADS} -rate ${NAABU_RATELIMIT} -timeout ${NAABU_TIMEOUT} -retries ${NAABU_RETRIES} -top-ports 1000 2>/dev/null | unew -ef -el -i -t "${output_file}" | unew -ef -el -i -t "${new_output_file}" | notify -silent -duc -bulk -id ${PORTS_NOTIFY} &>/dev/null
+	fi
+	
+	# Clean up temp file if created
+	if [[ -n "$input_source" ]] && [[ "$input_source" =~ ^/tmp/ ]]; then
+		rm -f "$input_source" 2>/dev/null
 	fi
 
 	STOP_SPINNER
 	if [[ "$VERBOSE" == true ]]; then
-	  echo -e "${BGREEN}[+] MONITOR_PORTS${RESET}\n  ├─ All ports      : $(wc -l 2>/dev/null < "${CRONJOBS_PORTSIR}/${TARGET}.naabu" || echo 0)\n  ├─ New ports      : $(wc -l 2>/dev/null < "${CRONJOBS_PORTSIR}/${TARGET}-new.naabu" || echo 0)\n  └─ Time taken     : ${TIME} seconds"
+	  echo -e "${BGREEN}[+] MONITOR_PORTS${RESET}\n  ├─ Input type     : ${input_type}\n  ├─ All ports      : $(wc -l 2>/dev/null < "${output_file}" || echo 0)\n  ├─ New ports      : $(wc -l 2>/dev/null < "${new_output_file}" || echo 0)\n  └─ Time taken     : ${TIME} seconds"
 	else
-	  echo -e "${BGREEN}[+] MONITOR_PORTS${RESET}: All ports: $(wc -l 2>/dev/null < "${CRONJOBS_PORTSIR}/${TARGET}.naabu" || echo 0), New ports: $(wc -l 2>/dev/null < "${CRONJOBS_PORTSIR}/${TARGET}-new.naabu" || echo 0), Time taken: ${TIME} seconds"
+	  echo -e "${BGREEN}[+] MONITOR_PORTS${RESET}: Input type: ${input_type}, All ports: $(wc -l 2>/dev/null < "${output_file}" || echo 0), New ports: $(wc -l 2>/dev/null < "${new_output_file}" || echo 0), Time taken: ${TIME} seconds"
 	fi
 }
 
 
 # Alive Subdomain Scanning
 MONITOR_ALIVESUBD(){
+	# Detect input type
+	local input_info=$(_detect_input_type "$TARGET")
+	local input_type=$(echo "$input_info" | cut -d'|' -f1)
+	local input_source=$(echo "$input_info" | cut -d'|' -f2)
+	local base_name=$(basename "$TARGET" .txt 2>/dev/null || echo "$TARGET")
+	base_name=$(basename "$base_name" .naabu 2>/dev/null || echo "$base_name")
+	base_name=$(basename "$base_name" .subs 2>/dev/null || echo "$base_name")
+	
+	# Run prerequisite functions WITHOUT starting MONITOR_ALIVESUBD spinner yet
+	# If domain provided, check if ports file exists first
+	if [[ "$input_type" == "domain" ]]; then
+		echo -e "${YELLOW}[~] Domain detected: ${TARGET}${RESET}"
+		# Check if ports file already exists
+		if [[ -s "${CRONJOBS_PORTSIR}/${TARGET}.naabu" ]]; then
+			echo -e "${YELLOW}[~] Using existing ports file: ${CRONJOBS_PORTSIR}/${TARGET}.naabu${RESET}"
+			input_source="${CRONJOBS_PORTSIR}/${TARGET}.naabu"
+			input_type="ports"
+			base_name="$TARGET"
+		else
+			# Check if subdomains file exists
+			if [[ -s "${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs" ]]; then
+				echo -e "${YELLOW}[~] Using existing subdomains file, running MONITOR_PORTS...${RESET}"
+				local original_target="$TARGET"
+				TARGET="${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs"
+				MONITOR_PORTS
+				TARGET="$original_target"
+			else
+				echo -e "${YELLOW}[~] Running MONITOR_SUBDOMAIN → MONITOR_PORTS first...${RESET}"
+				MONITOR_SUBDOMAIN
+				MONITOR_PORTS
+			fi
+			input_source="${CRONJOBS_PORTSIR}/${TARGET}.naabu"
+			input_type="ports"
+			base_name="$TARGET"
+		fi
+	# If subdomains file provided, check if ports file exists first
+	elif [[ "$input_type" == "subdomains" ]]; then
+		echo -e "${YELLOW}[~] Subdomains file detected${RESET}"
+		# Check if ports file already exists for this base_name
+		if [[ -s "${CRONJOBS_PORTSIR}/${base_name}.naabu" ]]; then
+			echo -e "${YELLOW}[~] Using existing ports file: ${CRONJOBS_PORTSIR}/${base_name}.naabu${RESET}"
+			input_source="${CRONJOBS_PORTSIR}/${base_name}.naabu"
+			input_type="ports"
+		else
+			echo -e "${YELLOW}[~] Ports file not found, running MONITOR_PORTS first...${RESET}"
+			# Temporarily set TARGET to input_source (file path) for MONITOR_PORTS
+			local original_target="$TARGET"
+			TARGET="$input_source"
+			MONITOR_PORTS
+			TARGET="$original_target"
+			input_source="${CRONJOBS_PORTSIR}/${base_name}.naabu"
+			input_type="ports"
+		fi
+	fi
+	
+	# Now start MONITOR_ALIVESUBD spinner - only when we're actually doing MONITOR_ALIVESUBD work
 	START_SPINNER "${BGREEN}MONITOR_ALIVESUBD${RESET}"
 
-	echo -e "Saving file in ${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs"
-	if [[ ! -s "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs" ]]; then
-	    cat ${CRONJOBS_PORTSIR}/${TARGET}.naabu | httpx -duc -silent -nc -sc -title -td -cl -t ${HTTPX_THREADS} | unew -ef -el -i -t -q ${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs
+	# Determine output file
+	local output_file="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${base_name}.alivesubs"
+	local new_output_file="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${base_name}-new.alivesubs"
+	
+	echo -e "Saving file in ${output_file}"
+	
+	# Get input data
+	local input_data=""
+	case "$input_type" in
+		"ports")
+			input_data=$(cat "$input_source")
+			;;
+		*)
+			# Fallback: use ports file
+			if [[ -f "${CRONJOBS_PORTSIR}/${TARGET}.naabu" ]]; then
+				input_data=$(cat "${CRONJOBS_PORTSIR}/${TARGET}.naabu")
+			else
+				echo -e "${BRED}[x] MONITOR_ALIVESUBD - ERROR: No valid input source found${RESET}"
+				STOP_SPINNER
+				return
+			fi
+			;;
+	esac
+	
+	# Process alive subdomain scanning
+	if [[ ! -s "${output_file}" ]]; then
+		echo "$input_data" | httpx -duc -silent -nc -sc -title -td -cl -t ${HTTPX_THREADS} | unew -ef -el -i -t -q "${output_file}"
 	else
-		cat ${CRONJOBS_PORTSIR}/${TARGET}.naabu | httpx -duc -silent -nc -sc -title -td -cl -t ${HTTPX_THREADS} | unew -ef -el -i -t ${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs | unew -ef -el -i -t ${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}-new.alivesubs | grep -aEi 'IIS|IIS Windows Server|Microsoft-IIS|Windows Server|3CX|phppgadmin|phpmyadmin|jetty|jboss|kibana|grafana|gitlab|kubernetes|citrix|symfony|jira|geoserver|rocketmq|Cisco|Joomla|kafka|pfSense|sonicwall|Jenkins|GlobalProtect|Sentinel|AEM|Airflow|Zimbra|CPanel|cacti|jellyfin|ActiveMQ|phpLDAPadmin' | notify -silent -duc -bulk -id ${ALIVESUBDOMAIN_NOTIFY} &>/dev/null
+		echo "$input_data" | httpx -duc -silent -nc -sc -title -td -cl -t ${HTTPX_THREADS} | unew -ef -el -i -t "${output_file}" | unew -ef -el -i -t "${new_output_file}" | grep -aEi 'IIS|IIS Windows Server|Microsoft-IIS|Windows Server|3CX|phppgadmin|phpmyadmin|jetty|jboss|kibana|grafana|gitlab|kubernetes|citrix|symfony|jira|geoserver|rocketmq|Cisco|Joomla|kafka|pfSense|sonicwall|Jenkins|GlobalProtect|Sentinel|AEM|Airflow|Zimbra|CPanel|cacti|jellyfin|ActiveMQ|phpLDAPadmin' | notify -silent -duc -bulk -id ${ALIVESUBDOMAIN_NOTIFY} &>/dev/null
+	fi
+	
+	# Clean up temp file if created
+	if [[ -n "$input_source" ]] && [[ "$input_source" =~ ^/tmp/ ]]; then
+		rm -f "$input_source" 2>/dev/null
 	fi
 
 	STOP_SPINNER
 	if [[ "$VERBOSE" == true ]]; then
-	  echo -e "${BGREEN}[+] MONITOR_ALIVESUBD${RESET}\n  ├─ All alive subdomains : $(wc -l 2>/dev/null < "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs" || echo 0)\n  ├─ New alive subdomains : $(wc -l 2>/dev/null < "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}-new.alivesubs" || echo 0)\n  └─ Time taken           : ${TIME} seconds"
+	  echo -e "${BGREEN}[+] MONITOR_ALIVESUBD${RESET}\n  ├─ Input type           : ${input_type}\n  ├─ All alive subdomains : $(wc -l 2>/dev/null < "${output_file}" || echo 0)\n  ├─ New alive subdomains : $(wc -l 2>/dev/null < "${new_output_file}" || echo 0)\n  └─ Time taken           : ${TIME} seconds"
 	else
-	  echo -e "${BGREEN}[+] MONITOR_ALIVESUBD${RESET}: All alive subdomains: $(wc -l 2>/dev/null < "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs" || echo 0), New alive subdomains: $(wc -l 2>/dev/null < "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}-new.alivesubs" || echo 0), Time taken: ${TIME} seconds"
+	  echo -e "${BGREEN}[+] MONITOR_ALIVESUBD${RESET}: Input type: ${input_type}, All alive subdomains: $(wc -l 2>/dev/null < "${output_file}" || echo 0), New alive subdomains: $(wc -l 2>/dev/null < "${new_output_file}" || echo 0), Time taken: ${TIME} seconds"
 	fi
 }
 
 
+# Generic helper function to detect input type and get input source
+# Returns: input_type|input_source
+_detect_input_type() {
+	local input="$1"
+	local input_source=""
+	local input_type=""
+	
+	# Check if input is a file
+	if [[ -f "$input" ]]; then
+		# Check if it's a URLs file (contains http:// or https://)
+		if grep -qE "^https?://" "$input" 2>/dev/null; then
+			input_type="urls"
+			input_source="$input"
+		# Check if it's an alive subdomains file (contains URLs with status codes, titles, etc.)
+		elif grep -qE "^https?://.*\[.*\]" "$input" 2>/dev/null || grep -qE "^https?://.*\s+\[" "$input" 2>/dev/null; then
+			input_type="alive_subs"
+			input_source="$input"
+		# Check if it's a ports file (contains IP:port or host:port)
+		elif grep -qE ":[0-9]+$" "$input" 2>/dev/null; then
+			input_type="ports"
+			input_source="$input"
+		# Check if it's a JS file (contains .js URLs)
+		elif grep -qE "\.js" "$input" 2>/dev/null; then
+			input_type="js"
+			input_source="$input"
+		# Check if it's a subdomains file (just domain names)
+		elif grep -qE "^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" "$input" 2>/dev/null; then
+			input_type="subdomains"
+			input_source="$input"
+		else
+			# Default: treat as subdomains file
+			input_type="subdomains"
+			input_source="$input"
+		fi
+	# Check if it's a domain (contains dots but no slashes, not a file)
+	elif [[ "$input" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] && [[ ! "$input" =~ / ]]; then
+		input_type="domain"
+		input_source=""
+	# Check if it's a URL
+	elif [[ "$input" =~ ^https?:// ]]; then
+		input_type="urls"
+		# Create temp file with single URL
+		input_source=$(mktemp)
+		echo "$input" > "$input_source"
+	else
+		# Default: treat as domain
+		input_type="domain"
+		input_source=""
+	fi
+	
+	echo "$input_type|$input_source"
+}
+
 # Javascript Scanning
 MONITOR_JS(){
+	local input="$TARGET"
+	local input_source=""
+	local input_type=""
+	local base_name=$(basename "$TARGET" .txt 2>/dev/null || echo "$TARGET")
+	base_name=$(basename "$base_name" .alivesubs 2>/dev/null || echo "$base_name")
+	base_name=$(basename "$base_name" .subs 2>/dev/null || echo "$base_name")
+	base_name=$(basename "$base_name" .naabu 2>/dev/null || echo "$base_name")
+	
+	# Detect input type directly (inline logic)
+	if [[ -f "$input" ]]; then
+		# Check if it's a URLs file (contains http:// or https://)
+		if grep -qE "^https?://" "$input" 2>/dev/null; then
+			input_type="urls"
+			input_source="$input"
+		# Check if it's an alive subdomains file (contains URLs with status codes, titles, etc.)
+		elif grep -qE "^https?://.*\[.*\]" "$input" 2>/dev/null || grep -qE "^https?://.*\s+\[" "$input" 2>/dev/null; then
+			input_type="alive_subs"
+			input_source="$input"
+		# Check if it's a subdomains file (just domain names)
+		elif grep -qE "^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" "$input" 2>/dev/null; then
+			input_type="subdomains"
+			input_source="$input"
+		else
+			# Default: treat as subdomains file
+			input_type="subdomains"
+			input_source="$input"
+		fi
+	# Check if it's a domain (contains dots but no slashes, not a file)
+	elif [[ "$input" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] && [[ ! "$input" =~ / ]]; then
+		input_type="domain"
+		input_source=""
+	# Check if it's a URL
+	elif [[ "$input" =~ ^https?:// ]]; then
+		input_type="urls"
+		# Create temp file with single URL
+		input_source=$(mktemp)
+		echo "$input" > "$input_source"
+	else
+		# Default: treat as domain
+		input_type="domain"
+		input_source=""
+	fi
+	
+	# Handle domain input - check for existing prerequisite files
+	# Run prerequisite functions WITHOUT starting MONITOR_JS spinner yet
+	if [[ "$input_type" == "domain" ]]; then
+		local domain="$TARGET"
+		ESCAPED_TARGET=$(echo "$domain" | sed 's/\./\\./g')
+		
+		echo -e "${YELLOW}[~] Domain detected: ${domain}${RESET}"
+		
+		# Check for existing files in order: alive_subs → ports → subdomains
+		if [[ -s "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${domain}.alivesubs" ]]; then
+			echo -e "${YELLOW}[~] Using existing alive subdomains file${RESET}"
+			input_source="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${domain}.alivesubs"
+			input_type="alive_subs"
+			base_name="$domain"
+		elif [[ -s "${CRONJOBS_PORTSIR}/${domain}.naabu" ]]; then
+			echo -e "${YELLOW}[~] Using existing ports file, running MONITOR_ALIVESUBD...${RESET}"
+			local original_target="$TARGET"
+			TARGET="${CRONJOBS_PORTSIR}/${domain}.naabu"
+			MONITOR_ALIVESUBD
+			TARGET="$original_target"
+			input_source="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${domain}.alivesubs"
+			input_type="alive_subs"
+			base_name="$domain"
+		elif [[ -s "${CRONJOBS_SUBDOMAINDIR}/${domain}.subs" ]]; then
+			echo -e "${YELLOW}[~] Using existing subdomains file, running MONITOR_PORTS → MONITOR_ALIVESUBD...${RESET}"
+			local original_target="$TARGET"
+			TARGET="${CRONJOBS_SUBDOMAINDIR}/${domain}.subs"
+			MONITOR_PORTS
+			TARGET="${CRONJOBS_PORTSIR}/${domain}.naabu"
+			MONITOR_ALIVESUBD
+			TARGET="$original_target"
+			input_source="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${domain}.alivesubs"
+			input_type="alive_subs"
+			base_name="$domain"
+		else
+			echo -e "${YELLOW}[~] Running full pipeline: MONITOR_SUBDOMAIN → MONITOR_PORTS → MONITOR_ALIVESUBD${RESET}"
+			MONITOR_SUBDOMAIN
+			MONITOR_PORTS
+			MONITOR_ALIVESUBD
+			input_source="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${domain}.alivesubs"
+			input_type="alive_subs"
+			base_name="$domain"
+		fi
+	fi
+	
+	# Now start MONITOR_JS spinner - only when we're actually doing MONITOR_JS work
 	START_SPINNER "${BGREEN}MONITOR_JS${RESET}"
 
-	echo -e "Saving file in ${CRONJOBS_JSDIR}/${TARGET}.js"
-	if [[ ! -s "${CRONJOBS_JSDIR}/${TARGET}.js" ]]; then
-	    cat ${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs | awk '{print $1}' | subjs | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -ef -el -i -t -q ${CRONJOBS_JSDIR}/${TARGET}.js
+	# Determine output file
+	local output_file="${CRONJOBS_JSDIR}/${base_name}.js"
+	local new_output_file="${CRONJOBS_JSDIR}/${base_name}-new.js"
+	
+	echo -e "Saving file in ${output_file}"
+	
+	# Extract domain for filtering
+	local filter_domain="$TARGET"
+	if [[ "$input_type" == "domain" ]]; then
+		filter_domain="$TARGET"
+		ESCAPED_TARGET=$(echo "$TARGET" | sed 's/\./\\./g')
 	else
-		cat ${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs | awk '{print $1}' | subjs | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -ef -el -i -t ${CRONJOBS_JSDIR}/${TARGET}.js | unew -ef -el -i -t ${CRONJOBS_JSDIR}/${TARGET}-new.js | notify -silent -duc -bulk -id ${JAVASCRIPT_NOTIFY} &>/dev/null
+		case "$input_type" in
+			"urls"|"alive_subs")
+				# Extract root domain from URLs/alive subdomains (first line)
+				filter_domain=$(head -1 "$input_source" 2>/dev/null | awk '{print $1}' | sed 's|https\?://||' | sed 's|/.*||' | sed 's|:.*||' | awk -F'.' '{print $(NF-1)"."$NF}')
+				;;
+			"subdomains")
+				# Extract root domain from subdomains (first line)
+				filter_domain=$(head -1 "$input_source" 2>/dev/null | awk -F'.' '{print $(NF-1)"."$NF}')
+				;;
+		esac
+		
+		# Fallback to base_name if extraction failed
+		if [[ -z "$filter_domain" ]] || [[ "$filter_domain" == "." ]]; then
+			filter_domain="$base_name"
+		fi
+		ESCAPED_TARGET=$(echo "$filter_domain" | sed 's/\./\\./g')
+	fi
+	
+	# Process input data based on detected type
+	local input_data=""
+	case "$input_type" in
+		"urls"|"alive_subs")
+			# URLs or alive subdomains - extract URLs (first column)
+			input_data=$(cat "$input_source" | awk '{print $1}')
+			;;
+		"subdomains")
+			# Subdomains - convert to URLs (assume https)
+			input_data=$(cat "$input_source" | sed 's|^|https://|')
+			;;
+		*)
+			# Fallback: try to use alive subdomains file
+			if [[ -f "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs" ]]; then
+				input_data=$(cat "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs" | awk '{print $1}')
+			else
+				echo -e "${BRED}[x] MONITOR_JS - ERROR: No valid input source found${RESET}"
+				STOP_SPINNER
+				return
+			fi
+			;;
+	esac
+	
+	# Process JS extraction with domain filtering
+	if [[ ! -s "${output_file}" ]]; then
+		echo "$input_data" | subjs | grep -aE "(https?://${ESCAPED_TARGET}(:[0-9]+)?(/)|\.${ESCAPED_TARGET}[:/])" | unew -ef -el -i -t -q "${output_file}"
+	else
+		echo "$input_data" | subjs | grep -aE "(https?://${ESCAPED_TARGET}(:[0-9]+)?(/)|\.${ESCAPED_TARGET}[:/])" | unew -ef -el -i -t "${output_file}" | unew -ef -el -i -t "${new_output_file}" | notify -silent -duc -bulk -id ${JAVASCRIPT_NOTIFY} &>/dev/null
+	fi
+	
+	# Clean up temp file if created
+	if [[ -n "$input_source" ]] && [[ "$input_source" =~ ^/tmp/ ]]; then
+		rm -f "$input_source" 2>/dev/null
 	fi
 
 	STOP_SPINNER
 	if [[ "$VERBOSE" == true ]]; then
-	  echo -e "${BGREEN}[+] MONITOR_JS${RESET}\n  ├─ All js         : $(wc -l 2>/dev/null < "${CRONJOBS_JSDIR}/${TARGET}.js" || echo 0)\n  ├─ New js         : $(wc -l 2>/dev/null < "${CRONJOBS_JSDIR}/${TARGET}-new.js" || echo 0)\n  └─ Time taken     : ${TIME} seconds"
+	  echo -e "${BGREEN}[+] MONITOR_JS${RESET}\n  ├─ Input type     : ${input_type}\n  ├─ All js         : $(wc -l 2>/dev/null < "${output_file}" || echo 0)\n  ├─ New js         : $(wc -l 2>/dev/null < "${new_output_file}" || echo 0)\n  └─ Time taken     : ${TIME} seconds"
 	else
-	  echo -e "${BGREEN}[+] MONITOR_JS${RESET}: All js: $(wc -l 2>/dev/null < "${CRONJOBS_JSDIR}/${TARGET}.js" || echo 0), New js: $(wc -l 2>/dev/null < "${CRONJOBS_JSDIR}/${TARGET}-new.js" || echo 0), Time taken: ${TIME} seconds"
+	  echo -e "${BGREEN}[+] MONITOR_JS${RESET}: Input type: ${input_type}, All js: $(wc -l 2>/dev/null < "${output_file}" || echo 0), New js: $(wc -l 2>/dev/null < "${new_output_file}" || echo 0), Time taken: ${TIME} seconds"
 	fi
 }
 
 
 # Javascript Leaks Scanning
 MONITOR_JSLEAKS(){
+	# Detect input type
+	local input_info=$(_detect_input_type "$TARGET")
+	local input_type=$(echo "$input_info" | cut -d'|' -f1)
+	local input_source=$(echo "$input_info" | cut -d'|' -f2)
+	local base_name=$(basename "$TARGET" .txt 2>/dev/null || echo "$TARGET")
+	base_name=$(basename "$base_name" .js 2>/dev/null || echo "$base_name")
+	base_name=$(basename "$base_name" .alivesubs 2>/dev/null || echo "$base_name")
+	base_name=$(basename "$base_name" .subs 2>/dev/null || echo "$base_name")
+	
+	# If domain provided, check if JS file exists first
+	if [[ "$input_type" == "domain" ]]; then
+		echo -e "${YELLOW}[~] Domain detected: ${TARGET}${RESET}"
+		# Check if JS file already exists
+		if [[ -s "${CRONJOBS_JSDIR}/${TARGET}.js" ]]; then
+			echo -e "${YELLOW}[~] Using existing JS file: ${CRONJOBS_JSDIR}/${TARGET}.js${RESET}"
+			input_source="${CRONJOBS_JSDIR}/${TARGET}.js"
+			input_type="js"
+			base_name="$TARGET"
+		else
+			# Check if alive subdomains file exists
+			if [[ -s "${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs" ]]; then
+				echo -e "${YELLOW}[~] Using existing alive subdomains file, running MONITOR_JS...${RESET}"
+				local original_target="$TARGET"
+				TARGET="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${TARGET}.alivesubs"
+				MONITOR_JS
+				TARGET="$original_target"
+			else
+				# Check if ports file exists
+				if [[ -s "${CRONJOBS_PORTSIR}/${TARGET}.naabu" ]]; then
+					echo -e "${YELLOW}[~] Using existing ports file, running MONITOR_ALIVESUBD → MONITOR_JS...${RESET}"
+					local original_target="$TARGET"
+					TARGET="${CRONJOBS_PORTSIR}/${TARGET}.naabu"
+					MONITOR_ALIVESUBD
+					TARGET="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${original_target}.alivesubs"
+					MONITOR_JS
+					TARGET="$original_target"
+				else
+					# Check if subdomains file exists
+					if [[ -s "${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs" ]]; then
+						echo -e "${YELLOW}[~] Using existing subdomains file, running MONITOR_PORTS → MONITOR_ALIVESUBD → MONITOR_JS...${RESET}"
+						local original_target="$TARGET"
+						TARGET="${CRONJOBS_SUBDOMAINDIR}/${TARGET}.subs"
+						MONITOR_PORTS
+						TARGET="${CRONJOBS_PORTSIR}/${original_target}.naabu"
+						MONITOR_ALIVESUBD
+						TARGET="${CRONJOBS_ALIVE_SUBDOMAINDIR}/${original_target}.alivesubs"
+						MONITOR_JS
+						TARGET="$original_target"
+					else
+						echo -e "${YELLOW}[~] Running full pipeline: MONITOR_SUBDOMAIN → MONITOR_PORTS → MONITOR_ALIVESUBD → MONITOR_JS${RESET}"
+						MONITOR_SUBDOMAIN
+						MONITOR_PORTS
+						MONITOR_ALIVESUBD
+						MONITOR_JS
+					fi
+				fi
+			fi
+			input_source="${CRONJOBS_JSDIR}/${TARGET}.js"
+			input_type="js"
+			base_name="$TARGET"
+		fi
+	# If subdomains/alive_subs/urls provided, check if JS file exists first
+	elif [[ "$input_type" == "subdomains" ]] || [[ "$input_type" == "alive_subs" ]] || [[ "$input_type" == "urls" ]]; then
+		echo -e "${YELLOW}[~] ${input_type} file detected${RESET}"
+		# Check if JS file already exists for this base_name
+		if [[ -s "${CRONJOBS_JSDIR}/${base_name}.js" ]]; then
+			echo -e "${YELLOW}[~] Using existing JS file: ${CRONJOBS_JSDIR}/${base_name}.js${RESET}"
+			input_source="${CRONJOBS_JSDIR}/${base_name}.js"
+			input_type="js"
+		else
+			echo -e "${YELLOW}[~] JS file not found, running MONITOR_JS first...${RESET}"
+			# Temporarily set TARGET to input_source for MONITOR_JS
+			local original_target="$TARGET"
+			TARGET="$input_source"
+			MONITOR_JS
+			TARGET="$original_target"
+			input_source="${CRONJOBS_JSDIR}/${base_name}.js"
+			input_type="js"
+		fi
+	fi
+	
+	# Now start MONITOR_JSLEAKS spinner - only when we're actually doing MONITOR_JSLEAKS work
 	START_SPINNER "${BGREEN}MONITOR_JSLEAKS${RESET}"
 
-	echo -e "Saving file in ${CRONJOBS_JSDIR}/${TARGET}.jsleaks"
-	if [[ ! -s "${CRONJOBS_JSDIR}/${TARGET}.jsleaks" ]]; then
-	    cat ${CRONJOBS_JSDIR}/${TARGET}.js | egrep -av "\.json" | grep -a "\.js" | linkinspector -silent -nc -mt "application/javascript" | awk '{print $1}' | unew -ef -el -i -t -q ${CRONJOBS_JSLEAKSDIR}/${TARGET}.jsleaks
-	    cat ${CRONJOBS_JSDIR}/${TARGET}.js | nuclei -duc -silent -nc -t ~/nuclei-templates/exposures/ | unew -ef -el -i -t -q ${CRONJOBS_JSLEAKSDIR}/${TARGET}.jsleaks
+	# Determine output file
+	local output_file="${CRONJOBS_JSLEAKSDIR}/${base_name}.jsleaks"
+	local new_output_file="${CRONJOBS_JSLEAKSDIR}/${base_name}-new.jsleaks"
+	
+	echo -e "Saving file in ${output_file}"
+	
+	# Get input data
+	local input_data=""
+	case "$input_type" in
+		"js")
+			input_data=$(cat "$input_source")
+			;;
+		*)
+			# Fallback: use JS file
+			if [[ -f "${CRONJOBS_JSDIR}/${TARGET}.js" ]]; then
+				input_data=$(cat "${CRONJOBS_JSDIR}/${TARGET}.js")
+			else
+				echo -e "${BRED}[x] MONITOR_JSLEAKS - ERROR: No valid input source found${RESET}"
+				STOP_SPINNER
+				return
+			fi
+			;;
+	esac
+	
+	# Process JS leaks scanning
+	if [[ ! -s "${output_file}" ]]; then
+		echo "$input_data" | egrep -av "\.json" | grep -a "\.js" | linkinspector -silent -nc -mt "application/javascript" | awk '{print $1}' | unew -ef -el -i -t -q "${output_file}"
+		echo "$input_data" | nuclei -duc -silent -nc -t ~/nuclei-templates/exposures/ | unew -ef -el -i -t -q "${output_file}"
 	else
-		cat ${CRONJOBS_JSDIR}/${TARGET}.js | egrep -av "\.json" | grep -a "\.js" | linkinspector -silent -nc -mt "application/javascript" | awk '{print $1}' | unew -ef -el -i -t ${CRONJOBS_JSLEAKSDIR}/${TARGET}.jsleaks | unew -ef -el -i -t ${CRONJOBS_JSLEAKSDIR}/${TARGET}-new.jsleaks | notify -silent -duc -bulk -id ${JAVASCRIPTLEAKS_NOTIFY} &>/dev/null
-		cat ${CRONJOBS_JSDIR}/${TARGET}.js | nuclei -duc -silent -nc -t ~/nuclei-templates/exposures/ | unew -ef -el -i -t ${CRONJOBS_JSLEAKSDIR}/${TARGET}.jsleaks | unew -ef -el -i -t ${CRONJOBS_JSLEAKSDIR}/${TARGET}-new.jsleaks | notify -silent -duc -bulk -id ${JAVASCRIPT_NOTIFY}leaks &>/dev/null
+		echo "$input_data" | egrep -av "\.json" | grep -a "\.js" | linkinspector -silent -nc -mt "application/javascript" | awk '{print $1}' | unew -ef -el -i -t "${output_file}" | unew -ef -el -i -t "${new_output_file}" | notify -silent -duc -bulk -id ${JAVASCRIPTLEAKS_NOTIFY} &>/dev/null
+		echo "$input_data" | nuclei -duc -silent -nc -t ~/nuclei-templates/exposures/ | unew -ef -el -i -t "${output_file}" | unew -ef -el -i -t "${new_output_file}" | notify -silent -duc -bulk -id ${JAVASCRIPT_NOTIFY}leaks &>/dev/null
+	fi
+	
+	# Clean up temp file if created
+	if [[ -n "$input_source" ]] && [[ "$input_source" =~ ^/tmp/ ]]; then
+		rm -f "$input_source" 2>/dev/null
 	fi
 
 	STOP_SPINNER
 	if [[ "$VERBOSE" == true ]]; then
-	  echo -e "${BGREEN}[+] MONITOR_JSLEAKS${RESET}\n  ├─ All jsleaks    : $(wc -l 2>/dev/null < "${CRONJOBS_JSDIR}/${TARGET}.jsleaks" || echo 0)\n  ├─ New jsleaks    : $(wc -l 2>/dev/null < "${CRONJOBS_JSDIR}/${TARGET}-new.jsleaks" || echo 0)\n  └─ Time taken     : ${TIME} seconds"
+	  echo -e "${BGREEN}[+] MONITOR_JSLEAKS${RESET}\n  ├─ Input type     : ${input_type}\n  ├─ All jsleaks    : $(wc -l 2>/dev/null < "${output_file}" || echo 0)\n  ├─ New jsleaks    : $(wc -l 2>/dev/null < "${new_output_file}" || echo 0)\n  └─ Time taken     : ${TIME} seconds"
 	else
-	  echo -e "${BGREEN}[+] MONITOR_JSLEAKS${RESET}: All jsleaks: $(wc -l 2>/dev/null < "${CRONJOBS_JSDIR}/${TARGET}.jsleaks" || echo 0), New jsleaks: $(wc -l 2>/dev/null < "${CRONJOBS_JSDIR}/${TARGET}-new.jsleaks" || echo 0), Time taken: ${TIME} seconds"
+	  echo -e "${BGREEN}[+] MONITOR_JSLEAKS${RESET}: Input type: ${input_type}, All jsleaks: $(wc -l 2>/dev/null < "${output_file}" || echo 0), New jsleaks: $(wc -l 2>/dev/null < "${new_output_file}" || echo 0), Time taken: ${TIME} seconds"
 	fi
 }
 

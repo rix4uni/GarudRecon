@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Default config file path
-CONFIG_PATH="configuration/garudrecon_max.cfg"
+CONFIG_PATH="configuration/garudrecon.cfg"
 
 TARGET=""
 
@@ -129,9 +129,11 @@ if [[ -z "$TARGET" && "$RESUME_MODE" == false ]]; then
     exit 1
 fi
 
-# Load configuration
+# Load configuration - check both possible locations
 if [[ -f "$CONFIG_PATH" ]]; then
     source "$CONFIG_PATH"
+elif [[ -f "$HOME/.garudrecon/configuration/garudrecon.cfg" ]]; then
+    source "$HOME/.garudrecon/configuration/garudrecon.cfg"
 else
     echo "Error: Configuration file '$CONFIG_PATH' not found."
     exit 1

@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Default config file path
-source "configuration/garudrecon_max.cfg"
+# Default config file path - only source if file exists (for version command)
+if [[ -f "configuration/garudrecon.cfg" ]]; then
+    source "configuration/garudrecon.cfg"
+elif [[ -f "$HOME/.garudrecon/configuration/garudrecon.cfg" ]]; then
+    source "$HOME/.garudrecon/configuration/garudrecon.cfg"
+fi
 
 # Help function
 function show_help() {

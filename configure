@@ -1,16 +1,5 @@
 #!/bin/bash
 
-INSTALL_DIR="$HOME/GarudRecon"
-
-if [ -d "$INSTALL_DIR/.git" ]; then
-    echo "[*] Updating GarudRecon..."
-    cd "$INSTALL_DIR" || exit 1
-else
-    echo "[*] Cloning GarudRecon..."
-    git clone --depth 1 https://github.com/rix4uni/GarudRecon.git "$INSTALL_DIR" &>/dev/null
-    cd "$INSTALL_DIR" || exit 1
-fi
-
 # create garudrecon directory if not exit
 mkdir -p "$HOME/.garudrecon"
 
@@ -26,220 +15,39 @@ mv garudrecon /usr/bin/
 # make it excutble
 chmod +x $HOME/.garudrecon/cmd/* /usr/bin/garudrecon
 
-# Get total RAM in GB
+# Get total RAM in GB (for display purposes only)
 # Try dmidecode first
-TOTAL_RAM_GB=$(dmidecode -t memory | grep -E "^\s*Size:" | grep -v "No Module Installed" | awk '{print $2}')
-
-# Fallback to free -t if dmidecode fails or returns nothing
-if [[ -z "$TOTAL_RAM_GB" ]]; then
-    TOTAL_RAM_GB=$(free -t | awk '/^Mem:/ {printf "%.0f\n", $2/1e6}')
+TOTAL_RAM_GB=$(dmidecode -t memory 2>/dev/null | grep -E "^\s*Size:" | grep -v "No Module Installed" | awk '{sum+=$2} END {print sum}' || echo "0")
+if [[ -z "$TOTAL_RAM_GB" || "$TOTAL_RAM_GB" == "0" ]]; then
+    TOTAL_RAM_GB=$(free -t 2>/dev/null | awk '/^Mem:/ {printf "%.0f\n", $2/1e6}' || echo "16")
 fi
 
-# Select config based on RAM
-if [ "$TOTAL_RAM_GB" -le 1 ]; then
-    CONFIG="garudrecon_1g.cfg"
-elif [ "$TOTAL_RAM_GB" -le 2 ]; then
-    CONFIG="garudrecon_2g.cfg"
-elif [ "$TOTAL_RAM_GB" -le 4 ]; then
-    CONFIG="garudrecon_4g.cfg"
-elif [ "$TOTAL_RAM_GB" -le 6 ]; then
-    CONFIG="garudrecon_6g.cfg"
-elif [ "$TOTAL_RAM_GB" -le 8 ]; then
-    CONFIG="garudrecon_8g.cfg"
-elif [ "$TOTAL_RAM_GB" -ge 16 ]; then
-    CONFIG="garudrecon_max.cfg"
-else
-    CONFIG="garudrecon_max.cfg"  # fallback
-fi
+# Use unified config file (RAM detection is now handled inside the config file)
+CONFIG="garudrecon.cfg"
 
-# set path to access globally according to system ram
-sed -i -e "s|source \"configuration/garudrecon_max.cfg\"|source \"$HOME/.garudrecon/configuration/$CONFIG\"|" -e 's|bash "$(dirname "\$0")/cmd/\(.*\)"|bash "$HOME/.garudrecon/cmd/\1"|' /usr/bin/garudrecon
-sed -i -e "s|CONFIG_PATH=\"configuration/garudrecon_max.cfg\"|CONFIG_PATH=\"$HOME/.garudrecon/configuration/$CONFIG\"|" -e 's|INSTALLEDLOGFILE="installed.log"|INSTALLEDLOGFILE="$HOME/.garudrecon/installed.log"|' $HOME/.garudrecon/cmd/install
-sed -i -e "s|CONFIG_PATH=\"configuration/garudrecon_max.cfg\"|CONFIG_PATH=\"$HOME/.garudrecon/configuration/$CONFIG\"|" -e 's|BASEDIR="scans"|BASEDIR="$HOME/.garudrecon/scans"|' $HOME/.garudrecon/cmd/smallscope
-sed -i -e "s|CONFIG_PATH=\"configuration/garudrecon_max.cfg\"|CONFIG_PATH=\"$HOME/.garudrecon/configuration/$CONFIG\"|" -e 's|BASEDIR="scans"|BASEDIR="$HOME/.garudrecon/scans"|' $HOME/.garudrecon/cmd/mediumscope
-sed -i -e "s|CONFIG_PATH=\"configuration/garudrecon_max.cfg\"|CONFIG_PATH=\"$HOME/.garudrecon/configuration/$CONFIG\"|" -e 's|BASEDIR="scans"|BASEDIR="$HOME/.garudrecon/scans"|' $HOME/.garudrecon/cmd/largescope
-sed -i -e "s|CONFIG_PATH=\"configuration/garudrecon_max.cfg\"|CONFIG_PATH=\"$HOME/.garudrecon/configuration/$CONFIG\"|" -e 's|BASEDIR="cronjobscan"|BASEDIR="$HOME/.garudrecon/cronjobscan"|' $HOME/.garudrecon/cmd/cronjobs
+# Update garudrecon script to use correct paths for cmd scripts
+sed -i -e "s|source \"configuration/garudrecon.cfg\"|source \"$HOME/.garudrecon/configuration/$CONFIG\"|" -e 's|bash "$(dirname "\$0")/cmd/\(.*\)"|bash "$HOME/.garudrecon/cmd/\1"|' /usr/bin/garudrecon
 
+# Update directory paths in scripts
+sed -i -e 's|BASEDIR="scans"|BASEDIR="$HOME/.garudrecon/scans"|' $HOME/.garudrecon/cmd/smallscope
+sed -i -e 's|BASEDIR="scans"|BASEDIR="$HOME/.garudrecon/scans"|' $HOME/.garudrecon/cmd/mediumscope
+sed -i -e 's|BASEDIR="scans"|BASEDIR="$HOME/.garudrecon/scans"|' $HOME/.garudrecon/cmd/largescope
+sed -i -e 's|BASEDIR="cronjobscan"|BASEDIR="$HOME/.garudrecon/cronjobscan"|' $HOME/.garudrecon/cmd/cronjobs
+sed -i -e 's|INSTALLEDLOGFILE="installed.log"|INSTALLEDLOGFILE="$HOME/.garudrecon/installed.log"|' $HOME/.garudrecon/cmd/install
 sed -i -e 's|mkdir -p wordlists|mkdir -p $HOME/.garudrecon/wordlists|' -e 's|mkdir -p takeovers|mkdir -p $HOME/.garudrecon/takeovers|' -e 's|mkdir -p templates|mkdir -p $HOME/.garudrecon/templates|' $HOME/.garudrecon/cmd/install
 sed -i -e 's|cp -r ~/nuclei-templates/http/takeovers templates/takeovers|cp -r ~/nuclei-templates/http/takeovers $HOME/.garudrecon/templates/takeovers|' $HOME/.garudrecon/cmd/install
 sed -i -e 's|templates/takeovers/\*\.yaml|$HOME/.garudrecon/templates/takeovers/*.yaml|' $HOME/.garudrecon/cmd/install
 sed -i -e 's|WORDLIST_BASEDIR="wordlists"|WORDLIST_BASEDIR="$HOME/.garudrecon/wordlists"|' $HOME/.garudrecon/configuration/$CONFIG
 sed -i -e 's|MODULES_DIR="modules"|MODULES_DIR="$HOME/.garudrecon/modules"|' $HOME/.garudrecon/cmd/workflow
 
-# Default values
-UPDATE_FLAG=""
+# Run the installation command - always install ALL tools
+garudrecon install -f ALL
 
-# Detect if --update is passed
-for arg in "$@"; do
-    if [ "$arg" == "--update" ]; then
-        UPDATE_FLAG="--update"
-    fi
-done
-
-# Detect scope argument (first positional argument that's a number 1-8)
-if [[ "$1" =~ ^[1-8]$ ]]; then
-    choice="$1"
-    case $choice in
-        1) scope="SMALLSCOPE" ;;
-        2) scope="MEDIUMSCOPE" ;;
-        3) scope="LARGESCOPE" ;;
-        4) scope="CIDRSCOPE" ;;
-        5) scope="WORKFLOW" ;;
-        6) scope="FLEET"
-            TOTALVPS=$(grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | wc -l)
-            echo "[*] FLEET mode selected. Deploying on $TOTALVPS VPS from worker.credentials..."
-
-            FLEETDIR="$HOME/.garudrecon/fleet"
-            OUTPUT="$HOME/.garudrecon/fleet/output"
-            mkdir -p $FLEETDIR
-            mkdir -p $OUTPUT
-
-            # Send sshkey to Workers-VPS
-            rm -rf $HOME/.ssh/id_ed25519 && ssh-keygen -t ed25519 -f "${HOME}/.ssh/id_ed25519" -N "" -q
-            parallel -a $HOME/worker.credentials --colsep ':' -j20 "sshpass -p {2} ssh-copy-id -i $HOME/.ssh/id_ed25519.pub -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {1} &>/dev/null"
-
-            # Send master.credentials file to Workers-VPS
-            grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | parallel -j50 "scp -o StrictHostKeyChecking=no $HOME/master.credentials {}:/root/master.credentials"
-            
-            grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | \
-            parallel -j50 "ssh -o StrictHostKeyChecking=no {} '
-              # read variables from the master.credentials on the worker
-              USER_IP=\$(cut -d: -f1 /root/master.credentials)
-              PASSWORD=\$(cut -d: -f2 /root/master.credentials)
-
-              tmux has-session -t fleet 2>/dev/null || tmux new-session -d -s fleet
-              tmux send-keys -t fleet \"rm -rf $HOME/.ssh/id_ed25519 && ssh-keygen -t ed25519 -f \${HOME}/.ssh/id_ed25519 -N '' -q && \
-              sshpass -p \${PASSWORD} ssh-copy-id -i \${HOME}/.ssh/id_ed25519 \
-              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \${USER_IP} &>/dev/null\" C-m
-            '"
-
-            # FLEET deployment logic here
-            grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | parallel -j50 'ssh -o StrictHostKeyChecking=no {} "tmux has-session -t fleet 2>/dev/null || tmux new-session -d -s fleet && tmux send-keys -t fleet \"bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure) 5 && exit\" C-m"'
-
-            # DEST="$FLEETDIR/${OUTPUT}"
-            # echo "[*] Waiting for results from $TOTALVPS VPS..."
-
-            # while true; do
-            #     DONE=$(find "$FLEETDIR" -maxdepth 1 -type f -name "${OUTPUT}_*" | wc -l)
-
-            #     # Calculate percentage
-            #     PERCENT=$(( 100 * DONE / TOTALVPS ))
-
-            #     # Build simple progress bar (50 chars wide)
-            #     BAR_WIDTH=50
-            #     FILLED=$(( PERCENT * BAR_WIDTH / 100 ))
-            #     EMPTY=$(( BAR_WIDTH - FILLED ))
-            #     BAR=$(printf "%${FILLED}s" | tr ' ' '#')
-            #     SPACE=$(printf "%${EMPTY}s")
-
-            #     echo -ne "\rProgress: [$BAR$SPACE] $DONE / $TOTALVPS VPS ($PERCENT%)"
-
-            #     if [[ $DONE -ge $TOTALVPS ]]; then
-            #         echo "[*] FLEET deployment initiated."
-            #         break
-            #     fi
-
-            #     sleep 5
-            # done
-
-            exit 0
-            ;;
-        7) scope="CRONJOBS" ;;
-        8) scope="ALL" ;;
-        *) scope="ALL" ;;  # fallback to ALL if invalid argument
-    esac
-else
-    # Interactive mode
-    echo "Choose installation scope:"
-    echo "1) SMALLSCOPE"
-    echo "2) MEDIUMSCOPE"
-    echo "3) LARGESCOPE"
-    echo "4) CIDRSCOPE"
-    echo "5) WORKFLOW"
-    echo "6) FLEET"
-    echo "7) CRONJOBS"
-    echo "8) ALL (default)"
-    read -p "Enter your choice [1-8, press Enter for ALL]: " choice
-
-    case $choice in
-        1) scope="SMALLSCOPE" ;;
-        2) scope="MEDIUMSCOPE" ;;
-        3) scope="LARGESCOPE" ;;
-        4) scope="CIDRSCOPE" ;;
-        5) scope="WORKFLOW" ;;
-        6) scope="FLEET"
-            TOTALVPS=$(grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | wc -l)
-            echo "[*] FLEET mode selected. Deploying on $TOTALVPS VPS from worker.credentials..."
-
-            FLEETDIR="$HOME/.garudrecon/fleet"
-            OUTPUT="$HOME/.garudrecon/fleet/output"
-            mkdir -p $FLEETDIR
-            mkdir -p $OUTPUT
-
-            # Send sshkey to Workers-VPS
-            rm -rf $HOME/.ssh/id_ed25519 && ssh-keygen -t ed25519 -f "${HOME}/.ssh/id_ed25519" -N "" -q
-            parallel -a $HOME/worker.credentials --colsep ':' -j20 "sshpass -p {2} ssh-copy-id -i $HOME/.ssh/id_ed25519.pub -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {1} &>/dev/null"
-
-            # Send master.credentials file to Workers-VPS
-            grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | parallel -j50 "scp -o StrictHostKeyChecking=no $HOME/master.credentials {}:/root/master.credentials"
-            
-            grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | \
-            parallel -j50 "ssh -o StrictHostKeyChecking=no {} '
-              # read variables from the master.credentials on the worker
-              USER_IP=\$(cut -d: -f1 /root/master.credentials)
-              PASSWORD=\$(cut -d: -f2 /root/master.credentials)
-
-              tmux has-session -t fleet 2>/dev/null || tmux new-session -d -s fleet
-              tmux send-keys -t fleet \"rm -rf $HOME/.ssh/id_ed25519 && ssh-keygen -t ed25519 -f \${HOME}/.ssh/id_ed25519 -N '' -q && \
-              sshpass -p \${PASSWORD} ssh-copy-id -i \${HOME}/.ssh/id_ed25519 \
-              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \${USER_IP} &>/dev/null\" C-m
-            '"
-
-            # FLEET deployment logic here
-            grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | parallel -j50 'ssh -o StrictHostKeyChecking=no {} "tmux has-session -t fleet 2>/dev/null || tmux new-session -d -s fleet && tmux send-keys -t fleet \"bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure) 5 && exit\" C-m"'
-
-            # DEST="$FLEETDIR/${OUTPUT}"
-            # echo "[*] Waiting for results from $TOTALVPS VPS..."
-
-            # while true; do
-            #     DONE=$(find "$FLEETDIR" -maxdepth 1 -type f -name "${OUTPUT}_*" | wc -l)
-
-            #     # Calculate percentage
-            #     PERCENT=$(( 100 * DONE / TOTALVPS ))
-
-            #     # Build simple progress bar (50 chars wide)
-            #     BAR_WIDTH=50
-            #     FILLED=$(( PERCENT * BAR_WIDTH / 100 ))
-            #     EMPTY=$(( BAR_WIDTH - FILLED ))
-            #     BAR=$(printf "%${FILLED}s" | tr ' ' '#')
-            #     SPACE=$(printf "%${EMPTY}s")
-
-            #     echo -ne "\rProgress: [$BAR$SPACE] $DONE / $TOTALVPS VPS ($PERCENT%)"
-
-            #     if [[ $DONE -ge $TOTALVPS ]]; then
-            #         echo "[*] FLEET deployment initiated."
-            #         break
-            #     fi
-
-            #     sleep 5
-            # done
-
-            exit 0
-            ;;
-        7) scope="CRONJOBS" ;;
-        8|"") scope="ALL" ;;   # empty input defaults to ALL
-        *) echo "Invalid choice, defaulting to ALL"; scope="ALL" ;;
-    esac
+# send config files (if .config directory exists)
+if [[ -d ".config" ]]; then
+    mkdir -p $HOME/.config
+    cp -r .config/* $HOME/.config 2>/dev/null || true
 fi
-
-echo "Selected scope: $scope"
-echo "Update flag: $UPDATE_FLAG"
-
-# Run the command
-garudrecon install -f "$scope" $UPDATE_FLAG
-
-# send config files
-cp -r .config/* $HOME/.config
 
 
 # Define colors
@@ -251,20 +59,25 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-echo -e "\n${BOLD}${CYAN}==> API Keys Configuration${NC}"
-echo -e "${YELLOW}Add your API keys to these files:${NC}"
-find .config -type f | while read -r file; do
-    echo -e "${GREEN}~/${file}${NC}"
-done
-
-echo -e "\n${BOLD}${CYAN}==> Restore from Backup (GitHub)${NC}"
-echo -e "  ${BLUE}git clone https://<TOKEN>@github.com/yourusername/private-config.git --depth 1${NC}"
-echo -e "  ${BLUE}cp -r private-config/* /root/.config && rm -rf private-config${NC}"
-
 echo -e "\n${BOLD}${CYAN}==> System Info${NC}"
 echo -e "${YELLOW}Detected System RAM:${NC} ${GREEN}${TOTAL_RAM_GB} GB${NC}"
-echo -e "${YELLOW}Recommended configuration file:${NC} ${GREEN}$CONFIG${NC}"
-echo -e "${YELLOW}Configuration applied according to your System RAM:${NC} ${GREEN}$CONFIG${NC}\n"
+echo -e "${YELLOW}Configuration file:${NC} ${GREEN}$CONFIG${NC} (auto-detects RAM and adjusts settings accordingly)\n"
 
-cd ..
-rm -rf GarudRecon
+echo -e "\n${BOLD}${CYAN}==> API Keys Configuration${NC} ${YELLOW}(Optional but highly recommended)${NC}"
+echo -e "${GREEN}Add your API keys to:${NC} ${GREEN}$HOME/.config${NC}"
+if [[ -d "$HOME/.config" ]] && [[ -n "$(find "$HOME/.config" -type f 2>/dev/null | head -1)" ]]; then
+    echo -e "${YELLOW}Configuration files location:${NC}"
+    find "$HOME/.config" -type f 2>/dev/null | head -10 | while read -r file; do
+        echo -e "  ${GREEN}~/${file#$HOME/}${NC}"
+done
+fi
+
+echo -e "\n${BOLD}${CYAN}==> Restore from Backup (GitHub)${NC}"
+echo -e "${BLUE}git clone https://<TOKEN>@github.com/yourusername/private-config.git --depth 1${NC}"
+echo -e "${BLUE}cp -r private-config/* $HOME/.config && rm -rf private-config${NC}"
+
+echo -e "\n${BOLD}${RED}==> IMPORTANT: Blind XSS Configuration${NC} ${YELLOW}(Required and highly recommended)${NC}"
+echo -e "${RED}⚠ WARNING:${NC} ${YELLOW}If you don't configure bxssreplace, all blind XSS notifications will be sent to rix4uni!${NC}"
+echo -e "${GREEN}Replace 'myezxssuser' with your own bxss username:${NC}"
+echo -e "${BLUE}cat ~/.garudrecon/wordlists/favourite.txt | bxssreplace --silent --username myezxssuser | unew ~/.garudrecon/wordlists/favourite2.txt && rm -rf ~/.garudrecon/wordlists/favourite.txt && mv ~/.garudrecon/wordlists/favourite2.txt ~/.garudrecon/wordlists/favourite.txt${NC}\n"
+

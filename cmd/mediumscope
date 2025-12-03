@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Default config file path
-CONFIG_PATH="configuration/garudrecon_max.cfg"
+CONFIG_PATH="configuration/garudrecon.cfg"
 
 TARGET=""
 
@@ -176,10 +176,13 @@ if [[ -z "$TARGET" && "$RESUME_MODE" == false ]]; then
     exit 1
 fi
 
-# Load configuration
+# Load configuration - check both possible locations
 if [[ -f "$CONFIG_PATH" ]]; then
     # shellcheck disable=SC1090
     source "$CONFIG_PATH"
+elif [[ -f "$HOME/.garudrecon/configuration/garudrecon.cfg" ]]; then
+    # shellcheck disable=SC1090
+    source "$HOME/.garudrecon/configuration/garudrecon.cfg"
 else
     echo "Error: Configuration file '$CONFIG_PATH' not found."
     exit 1
@@ -1298,10 +1301,10 @@ FFUFVHOST(){
 FAVINFO(){
 	START_SPINNER "${BGREEN}FAVINFO${RESET}"
 
-	timelimitx -t ${FAVINFO_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | favinfo -silent -timeout $FAVINFO_TIMEOUT | unew -el -t -q ${FAVICON_HASH}/favinfo.txt"
+	timelimitx -t ${FAVINFO_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | favinfo --silent --timeout 30s --json | unew -a ${FAVICON_HASH}/favinfo.json"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] FAVINFO${RESET}: $(wc -l 2>/dev/null < ${FAVICON_HASH}/favinfo.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	echo -e "${BGREEN}[+] FAVINFO${RESET}: $(wc -l 2>/dev/null < ${FAVICON_HASH}/favinfo.json || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
 FAVIRECON(){
@@ -1410,6 +1413,21 @@ EMAILFINDER(){
 
 	STOP_SPINNER
 	echo -e "${BGREEN}[+] EMAILFINDER${RESET}: $(wc -l 2>/dev/null < ${ROOT_EMAILSDIR}/emailfinder.emails || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+}
+
+EMAILEXTRACTOR(){
+	START_SPINNER "${BGREEN}EMAILEXTRACTOR${RESET}"
+
+	if [ "$XSS_SCAN_MODE" = "NORMAL" ]; then
+		echo "$TARGET" | httpx -duc -silent -nc | emailextractor -silent | grep "::" | cut -d":" -f4 | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g" | unew -i ${ROOT_EMAILSDIR}/emailfinder.emails
+	fi
+
+	if [ "$XSS_SCAN_MODE" = "ADVANCED" ]; then
+		cat ${SUBDOMAINDIR}/alivesubs.txt | emailextractor -silent | grep "::" | cut -d":" -f4 | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g" | unew -i ${ROOT_EMAILSDIR}/emailfinder.emails
+	fi
+
+	STOP_SPINNER
+	echo -e "${BGREEN}[+] EMAILEXTRACTOR${RESET}: $(wc -l 2>/dev/null < ${ROOT_EMAILSDIR}/emailfinder.emails || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
 
@@ -2264,16 +2282,7 @@ DIG(){
 FTP(){
 	START_SPINNER "${BGREEN}FTP${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/naabu.txt | grep -a ":21$" | unew -el -i -t -q ${VULNDIR}/ftp-urls.txt
-
-	# Check if the file exists and has 0 lines
-    if [ ! -s "$VULNDIR/ftp-urls.txt" ]; then
-        echo -e "${BRED}[x] FTP${RESET}: 0, ${TIME} seconds"
-        STOP_SPINNER
-        return
-    fi
-
-	cat ${VULNDIR}/ftp-urls.txt | interlace --silent -threads 10 -c "ftpx -mode upc -ip _target_ -wordlist wordlists/ftp-username-password.txt > _output_/_cleantarget_.txt" -o ${FTPDIR}
+	cat ${ROOT_SUBDOMAINDIR}/naabu.txt | grep -a ":21$" | unew | interlace --silent -threads 10 -c "ftpx multiuser --ip _target_ --up ~/.garudrecon/wordlists/ftp-username-password.txt > _output_/_cleantarget_.txt" -o ${FTPDIR}
 	cat ${FTPDIR}/*.txt 2>/dev/null | unew -el -t -q ${VULNDIR}/ftp.txt
 
 	# Check if the file has more than 0 lines
@@ -2314,30 +2323,31 @@ S3SCANNER(){
 	echo -e "${BGREEN}[+] S3SCANNER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/ssh.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
+
+TECHFINDER(){
+	START_SPINNER "${BGREEN}TECHFINDER${RESET}"
+
+	if [ "$TECHFINDER_SCAN_MODE" = "NORMAL" ]; then
+		cat ${ROOT_SUBDOMAINDIR}/httpx.txt | techfinder -silent -timeout 30 -i -discord -id alivesubdomain -json -o ${URLSDIR}/techfinder.json &>/dev/null
+	fi
+
+	if [ "$TECHFINDER_SCAN_MODE" = "ADVANCED" ]; then
+		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-4 | unew -el -i -t -q ${URLSDIR}/techfinder_dir.txt
+		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-5 | unew -el -i -t -q ${URLSDIR}/techfinder_dir.txt
+		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-6 | unew -el -i -t -q ${URLSDIR}/techfinder_dir.txt
+
+		cat ${URLSDIR}/techfinder_dir.txt | egrep -av '\?|=|/[0-9]' | grep -aEv '(-.*){2}' | awk -F/ '{if (index($NF, ".") == 0) print $0}' | awk -F/ '{if (length($NF) <= 15) print $0}' | sed 's/\(\/\|\/__\|\/_\)\s*$//' | awk -F'/' 'NF > 3' | unew -el -i -t -q ${URLSDIR}/techfinder_dir_filter.txt
+		cat ${URLSDIR}/techfinder_dir_filter.txt | techfinder -silent -timeout 30 -i -discord -id alivesubdomain -json -o ${URLSDIR}/techfinder.json &>/dev/null
+	fi
+
+	STOP_SPINNER
+	echo -e "${BGREEN}[+] TECHFINDER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/techfinder.json || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+}
+
 VULNTECHFINDER(){
 	START_SPINNER "${BGREEN}VULNTECHFINDER${RESET}"
 
-	if [ "$VULNTECHFINDER_SCAN_MODE" = "NORMAL" ]; then
-		cat ${ROOT_SUBDOMAINDIR}/httpx.txt | httpx -duc -silent -nc -td -t ${HTTPX_THREADS} | unew -el -i -t -q ${URLSDIR}/vulntechfinder_httpx.txt
-	fi
-
-	if [ "$VULNTECHFINDER_SCAN_MODE" = "ADVANCED" ]; then
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-4 | unew -el -i -t -q ${URLSDIR}/vulntechfinder_dir.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-5 | unew -el -i -t -q ${URLSDIR}/vulntechfinder_dir.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-6 | unew -el -i -t -q ${URLSDIR}/vulntechfinder_dir.txt
-
-		cat ${URLSDIR}/vulntechfinder_dir.txt | egrep -av '\?|=|/[0-9]' | grep -aEv '(-.*){2}' | awk -F/ '{if (index($NF, ".") == 0) print $0}' | awk -F/ '{if (length($NF) <= 15) print $0}' | sed 's/\(\/\|\/__\|\/_\)\s*$//' | awk -F'/' 'NF > 3' | unew -el -i -t -q ${URLSDIR}/vulntechfinder_dir_filter.txt
-		cat ${URLSDIR}/vulntechfinder_dir_filter.txt | httpx -duc -silent -nc -td -t ${HTTPX_THREADS} | unew -el -i -t -q ${URLSDIR}/vulntechfinder_httpx.txt
-	fi
-
-	# Common steps for both conditions
-	cat ${URLSDIR}/vulntechfinder_httpx.txt | vulntechfinder httpxjson -o ${VULNDIR}/httpxjson-output.json &>/dev/null
-	vulntechfinder nuclei --file ${VULNDIR}/httpxjson-output.json --nucleicmd "nuclei -duc -nc -silent -tc {tech} -es ${VULNTECHFINDER_NUCLEI_EXCLUDE_SEVERITY}" --process --parallel ${VULNTECHFINDER_PARALLEL} --exclude-tech ${VULNTECHFINDER_EXCLUDE_TECH} --append-output ${VULNDIR}/vulntechfinder.txt &>/dev/null
-
-	# Check if the file has more than 0 lines
-	if [ -f "${VULNDIR}/vulntechfinder.txt" ] && [ $(wc -l < "${VULNDIR}/vulntechfinder.txt") -gt 0 ]; then
-	    cp "${VULNDIR}/vulntechfinder.txt" "${ROOT_VULNDIR}/vulntechfinder.txt"
-	fi
+	cat ${URLSDIR}/techfinder.json | vulntechfinder nuclei --cmd "nuclei -duc -t ~/nuclei-templates -tags {tech} -es unknown,info,low" --parallel 10 --output ${VULNDIR}/vulntechfinder.txt
 
 	STOP_SPINNER
 	echo -e "${BGREEN}[+] VULNTECHFINDER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/vulntechfinder.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
@@ -2353,11 +2363,11 @@ XSS(){
 	if [ "$XSS_SCAN_MODE" = "NORMAL" ]; then
 		if [ "$USE_GFPATTERNS" = "TRUE" ]; then
 			cat ${URLSDIR}/filteredurls.txt | gf xss | unew -el -t -q ${URLSDIR}/gf_xss.txt
-			cat ${URLSDIR}/gf_xss.txt | xssrecon --silent --skipspecialchar --json | jq -r 'select(.reflected==true) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
+			cat ${URLSDIR}/gf_xss.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
 			cat ${VULNDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/xss_pvreplace.txt
 		else
 			# if USE_GFPATTERNS is FALSE then scan all parameters
-			cat ${URLSDIR}/filteredurls.txt | xssrecon --silent --skipspecialchar --json | jq -r 'select(.reflected==true) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
+			cat ${URLSDIR}/filteredurls.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
 			cat ${VULNDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/xss_pvreplace.txt
 		fi
 
@@ -2368,21 +2378,19 @@ XSS(){
 	if [ "$XSS_SCAN_MODE" = "ADVANCED" ]; then
 		if [ "$USE_GFPATTERNS" = "TRUE" ]; then
 			cat ${URLSDIR}/filteredurls.txt | gf xss | unew -el -t -q ${URLSDIR}/gf_xss.txt
-			cat ${URLSDIR}/gf_xss.txt | xssrecon --silent --skipspecialchar --json | jq -r 'select(.reflected==true) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
+			cat ${URLSDIR}/gf_xss.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
 			cat ${VULNDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/xss_pvreplace.txt
 		else
 			# if USE_GFPATTERNS is FALSE then scan all parameters
-			cat ${URLSDIR}/filteredurls.txt | xssrecon --silent --skipspecialchar --json | jq -r 'select(.reflected==true) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
+			cat ${URLSDIR}/filteredurls.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
 			cat ${VULNDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/xss_pvreplace.txt
 		fi
 
 		# Common steps for both TRUE and FALSE conditions
 		cat ${VULNDIR}/xss_pvreplace.txt | xsschecker -nc -match 'rix4uni' -vuln -t ${XSSCHECKER_THREADS} -timeout ${XSSCHECKER_TIMEOUT} -retries ${XSSCHECKER_RETRIES} -filter 2>/dev/null | unew -el -t -q ${VULNDIR}/xsschecker.txt
 
-		# Checks XSS False Positive
-		cat ${VULNDIR}/xsschecker.txt | unew -q -split ${XSSCHECKER_SPLIT} ${VULNDIR}/xsschecker_split.txt
-		parallel --ungroup -j${PYXSS_PARALLEL_FILE_SCAN} "cat {} | pyxss --silent --no-color -o {= s:xsschecker_split:xss: =}" ::: ${VULNDIR}/xsschecker_split*.txt &>/dev/null
-		cat ${VULNDIR}/xss[0-9]*.txt | egrep -av 'NOT VULNERABLE:' | unew -el -ef ${ROOT_VULNDIR}/xss.txt | notify -silent -duc -id ${XSS_NOTIFY} &>/dev/null
+		# Checks XSS False Positive		
+		cat ${VULNDIR}/xsschecker.txt | pyxss --silent --headless --no-color --workers 10 | egrep -av 'NOT VULNERABLE:' | unew -el -ef ${ROOT_VULNDIR}/xss.txt | notify -silent -duc -id ${XSS_NOTIFY} &>/dev/null
 	fi
 
 	STOP_SPINNER
@@ -2827,6 +2835,7 @@ RECON(){
 
 	# Email Enumeration
 	run "EMAILFINDER"
+	run "EMAILEXTRACTOR"
 
 
 	# Url Crawling
@@ -3130,6 +3139,7 @@ else
 
 	# Email Enumeration
 	run "EMAILFINDER"
+	run "EMAILEXTRACTOR"
 
 
 	# Url Crawling
@@ -3217,6 +3227,7 @@ else
 	run "FTP"
 	# run "SSH"
 	# run "S3SCANNER"
+	run "TECHFINDER"
 	run "VULNTECHFINDER"
 	run "XSS"
 	run "ERRORBASEDSQLI"
