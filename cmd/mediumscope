@@ -2542,6 +2542,33 @@ SWAGGERUI(){
 403_401_BYPASS(){
 	START_SPINNER "${BGREEN}403_401_BYPASS${RESET}"
 
+	# Check if the file exists and has 0 lines
+    if [ ! -s "${URLSDIR}/filteredurls.txt" ]; then
+        echo -e "${BRED}[x] 403_401_BYPASS${RESET}: 0, ${TIME} seconds"
+        STOP_SPINNER
+        return
+    fi
+
+	# Filter URLs with 403/401 status codes
+	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | grep -aE "\[403\]|\[401\]" | awk '{print $1}' | unew -el -t -q ${VULNDIR}/403_401_candidates.txt
+	cat ${URLSDIR}/filteredurls.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "httpx -duc -silent -nc -sc -fr _target_ 2>> >(sed \"s/^/${FUNCNAME[0]}: /\" >> \"$ERRORLOGFILE\") >/dev/null | grep -aE '\[403\]|\[401\]' | awk '{print \$1}'" -o ${VULNDIR}/tmp-403-401 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null
+	cat ${VULNDIR}/tmp-403-401/*.txt 2>/dev/null | grep -av "^$" | unew -el -t -q ${VULNDIR}/403_401_candidates.txt && rm -rf ${VULNDIR}/tmp-403-401
+
+	# Check if the file exists and has 0 lines
+    if [ ! -s "${VULNDIR}/403_401_candidates.txt" ]; then
+        echo -e "${BRED}[x] 403_401_BYPASS${RESET}: 0, ${TIME} seconds"
+        STOP_SPINNER
+        return
+    fi
+
+	# Use nomore403 for 403/401 bypass
+	cat ${VULNDIR}/403_401_candidates.txt | nomore403 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null | unew -el -t -q ${VULNDIR}/403_401_bypass.txt
+
+	# Check if the file has more than 0 lines
+	if [ -f "${VULNDIR}/403_401_bypass.txt" ] && [ $(wc -l < "${VULNDIR}/403_401_bypass.txt") -gt 0 ]; then
+	    cp "${VULNDIR}/403_401_bypass.txt" "${ROOT_VULNDIR}/403_401_bypass.txt"
+	fi
+
 	STOP_SPINNER
 	echo -e "${BGREEN}[+] 403_401_BYPASS${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/403_401_bypass.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
@@ -2810,6 +2837,112 @@ INSECURE_DESERIALIZATION(){
 
 	STOP_SPINNER
 	echo -e "${BGREEN}[+] INSECURE_DESERIALIZATION${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/insecure_deserialization.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+}
+
+PROTOTYPE_POLLUTION(){
+	START_SPINNER "${BGREEN}PROTOTYPE_POLLUTION${RESET}"
+
+	# Check if the file exists and has 0 lines
+    if [ ! -s "${ROOT_URLSDIR}/allurls.txt" ]; then
+        echo -e "${BRED}[x] PROTOTYPE_POLLUTION${RESET}: 0, ${TIME} seconds"
+        STOP_SPINNER
+        return
+    fi
+
+	# Use ppmap for prototype pollution detection
+	cat ${ROOT_URLSDIR}/allurls.txt | ppmap 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null | grep -aE "EXPL" | unew -el -t -q ${VULNDIR}/prototype_pollution.txt
+
+	# Check if the file has more than 0 lines
+	if [ -f "${VULNDIR}/prototype_pollution.txt" ] && [ $(wc -l < "${VULNDIR}/prototype_pollution.txt") -gt 0 ]; then
+	    cp "${VULNDIR}/prototype_pollution.txt" "${ROOT_VULNDIR}/prototype_pollution.txt"
+	fi
+
+	STOP_SPINNER
+	echo -e "${BGREEN}[+] PROTOTYPE_POLLUTION${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/prototype_pollution.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+}
+
+HTTP_SMUGGLING(){
+	START_SPINNER "${BGREEN}HTTP_SMUGGLING${RESET}"
+
+	# Check if the file exists and has 0 lines
+    if [ ! -s "${ROOT_SUBDOMAINDIR}/httpx.txt" ]; then
+        echo -e "${BRED}[x] HTTP_SMUGGLING${RESET}: 0, ${TIME} seconds"
+        STOP_SPINNER
+        return
+    fi
+
+	# Prepare URLs for smuggling detection
+	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | awk '{print $1}' | unew -el -t -q ${VULNDIR}/smuggling_candidates.txt
+
+	# Use smuggler for HTTP request smuggling detection
+	cat ${VULNDIR}/smuggling_candidates.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "python3 tools/smuggler/smuggler.py -u _target_ -m GET -q 2>> >(sed \"s/^/${FUNCNAME[0]}: /\" >> \"$ERRORLOGFILE\") >/dev/null | grep -aE 'VULNERABLE|SMUGGLED' > _output_/_cleantarget_.txt" -o ${VULNDIR}/tmp-smuggling 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null
+	cat ${VULNDIR}/tmp-smuggling/*.txt 2>/dev/null | grep -av "^$" | unew -el -t -q ${VULNDIR}/http_smuggling.txt && rm -rf ${VULNDIR}/tmp-smuggling
+
+	# Check if the file has more than 0 lines
+	if [ -f "${VULNDIR}/http_smuggling.txt" ] && [ $(wc -l < "${VULNDIR}/http_smuggling.txt") -gt 0 ]; then
+	    cp "${VULNDIR}/http_smuggling.txt" "${ROOT_VULNDIR}/http_smuggling.txt"
+	fi
+
+	STOP_SPINNER
+	echo -e "${BGREEN}[+] HTTP_SMUGGLING${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/http_smuggling.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+}
+
+WEB_CACHE_POISONING(){
+	START_SPINNER "${BGREEN}WEB_CACHE_POISONING${RESET}"
+
+	# Check if the file exists and has 0 lines
+    if [ ! -s "${ROOT_SUBDOMAINDIR}/httpx.txt" ]; then
+        echo -e "${BRED}[x] WEB_CACHE_POISONING${RESET}: 0, ${TIME} seconds"
+        STOP_SPINNER
+        return
+    fi
+
+	# Prepare URLs for cache poisoning detection
+	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | awk '{print $1}' | unew -el -t -q ${VULNDIR}/cache_poisoning_candidates.txt
+
+	# Use Web-Cache-Vulnerability-Scanner for cache poisoning detection
+	cat ${VULNDIR}/cache_poisoning_candidates.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "tools/Web-Cache-Vulnerability-Scanner/Web-Cache-Vulnerability-Scanner -u _target_ -v 0 2>> >(sed \"s/^/${FUNCNAME[0]}: /\" >> \"$ERRORLOGFILE\") >/dev/null > _output_/_cleantarget_.txt" -o ${VULNDIR}/tmp-cache-poisoning 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null
+	cat ${VULNDIR}/tmp-cache-poisoning/*.txt 2>/dev/null | grep -av "^$" | unew -el -t -q ${VULNDIR}/web_cache_poisoning.txt && rm -rf ${VULNDIR}/tmp-cache-poisoning
+
+	# Check if the file has more than 0 lines
+	if [ -f "${VULNDIR}/web_cache_poisoning.txt" ] && [ $(wc -l < "${VULNDIR}/web_cache_poisoning.txt") -gt 0 ]; then
+	    cp "${VULNDIR}/web_cache_poisoning.txt" "${ROOT_VULNDIR}/web_cache_poisoning.txt"
+	fi
+
+	STOP_SPINNER
+	echo -e "${BGREEN}[+] WEB_CACHE_POISONING${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/web_cache_poisoning.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+}
+
+BROKEN_LINKS(){
+	START_SPINNER "${BGREEN}BROKEN_LINKS${RESET}"
+
+	# Check if the file exists and has 0 lines
+    if [ ! -s "${ROOT_SUBDOMAINDIR}/httpx.txt" ]; then
+        echo -e "${BRED}[x] BROKEN_LINKS${RESET}: 0, ${TIME} seconds"
+        STOP_SPINNER
+        return
+    fi
+
+	# Use katana to crawl and find links
+	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | awk '{print $1}' | katana -duc -silent -nc -jc -kf all -c ${KATANA_THREADS:-50} -d 2 -timeout ${KATANA_TIMEOUT:-10} 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null | unew -el -t -q ${VULNDIR}/katana_links.txt
+
+	# Check if katana found any links
+    if [ ! -s "${VULNDIR}/katana_links.txt" ]; then
+        echo -e "${BRED}[x] BROKEN_LINKS${RESET}: 0, ${TIME} seconds"
+        STOP_SPINNER
+        return
+    fi
+
+	# Use httpx to check for broken links (4xx status codes)
+	cat ${VULNDIR}/katana_links.txt | httpx -duc -silent -nc -sc -fr -t ${HTTPX_THREADS:-100} 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null | grep -aE "\[4" | awk '{print $1}' | unew -el -t -q ${VULNDIR}/broken_links.txt
+
+	# Check if the file has more than 0 lines
+	if [ -f "${VULNDIR}/broken_links.txt" ] && [ $(wc -l < "${VULNDIR}/broken_links.txt") -gt 0 ]; then
+	    cp "${VULNDIR}/broken_links.txt" "${ROOT_VULNDIR}/broken_links.txt"
+	fi
+
+	STOP_SPINNER
+	echo -e "${BGREEN}[+] BROKEN_LINKS${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/broken_links.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
 }
 
 
@@ -3394,6 +3527,11 @@ else
 	run "PATH_TRAVERSAL"
 	run "NOSQL_INJECTION"
 	run "INSECURE_DESERIALIZATION"
+	run "PROTOTYPE_POLLUTION"
+	run "HTTP_SMUGGLING"
+	run "WEB_CACHE_POISONING"
+	run "BROKEN_LINKS"
+	run "403_401_BYPASS"
 	run "DOTGIT"
 	run "PDFTOTEXT"
 	run "JSLEAKS"
@@ -3401,7 +3539,6 @@ else
 	# run "GITHUBLEAKS"
 	run "IIS"
 	run "SWAGGERUI"
-	# run "403_401_BYPASS"
 
 
 	# URLs Secrets

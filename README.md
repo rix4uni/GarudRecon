@@ -89,7 +89,7 @@ Before installing GarudRecon, ensure you have:
 - **Bash shell** (verify with `echo $SHELL`)
 - **Internet connection** for downloading tools and dependencies
 - **Minimum 4GB RAM** (8GB+ recommended for large scans)
-- **Sufficient disk space** (at least 40GB free for tools and output)
+- **Sufficient disk space** (at least 10GB free for tools and output)
 
 ## Referral Links
 

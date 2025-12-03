@@ -1343,6 +1343,46 @@ YSOSERIAL() {
     install_custom_tool "YSOSERIAL" "ysoserial" "wget -q https://github.com/rix4uni/ysoserial/releases/download/v0.0.8-20220404-155839b/ysoserial-all.jar -O /opt/ysoserial.jar && echo -e '#!/usr/bin/env bash\\nexec java -jar /opt/ysoserial.jar \"\$@\"' | sudo tee /usr/local/bin/ysoserial &>/dev/null && sudo chmod +x /usr/local/bin/ysoserial"
 }
 
+PPMAP() {
+    install_go_tool "PPMAP" "ppmap" "github.com/kleiton0x00/ppmap@latest"
+}
+
+SMUGGLER() {
+    START_SPINNER "${BGREEN}SMUGGLER${RESET}"
+    
+    mkdir -p tools
+    git clone https://github.com/defparam/smuggler.git --depth 1 tools/smuggler &>/dev/null
+    cd tools/smuggler && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && cd - &>/dev/null
+    
+    if [[ -f "tools/smuggler/smuggler.py" ]]; then
+        STOP_SPINNER
+        log_message "${BGREEN}[+] SMUGGLER - INSTALLED${RESET}: ${TIME} seconds"
+    else
+        STOP_SPINNER
+        log_message "${BRED}[x] SMUGGLER - INSTALLATION FAILED${RESET}: ${TIME} seconds"
+    fi
+}
+
+NOMORE403() {
+    install_gocl_tool "NOMORE403" "nomore403" "github.com/devploit/nomore403"
+}
+
+WEB_CACHE_VULNERABILITY_SCANNER() {
+    START_SPINNER "${BGREEN}WEB_CACHE_VULNERABILITY_SCANNER${RESET}"
+    
+    mkdir -p tools
+    git clone https://github.com/Hackmanit/Web-Cache-Vulnerability-Scanner.git --depth 1 tools/Web-Cache-Vulnerability-Scanner &>/dev/null
+    cd tools/Web-Cache-Vulnerability-Scanner && go build -o Web-Cache-Vulnerability-Scanner &>/dev/null && chmod +x Web-Cache-Vulnerability-Scanner && cd - &>/dev/null
+    
+    if [[ -f "tools/Web-Cache-Vulnerability-Scanner/Web-Cache-Vulnerability-Scanner" ]] && [[ -x "tools/Web-Cache-Vulnerability-Scanner/Web-Cache-Vulnerability-Scanner" ]]; then
+        STOP_SPINNER
+        log_message "${BGREEN}[+] WEB_CACHE_VULNERABILITY_SCANNER - INSTALLED${RESET}: ${TIME} seconds"
+    else
+        STOP_SPINNER
+        log_message "${BRED}[x] WEB_CACHE_VULNERABILITY_SCANNER - INSTALLATION FAILED${RESET}: ${TIME} seconds"
+    fi
+}
+
 
 # CONFIGS
 CONFIGS() {
@@ -1626,6 +1666,10 @@ ALL(){
     DOTDOTPWN
     NOSQLMAP
     YSOSERIAL
+    PPMAP
+    SMUGGLER
+    NOMORE403
+    WEB_CACHE_VULNERABILITY_SCANNER
     CONFIGS
     TRICKESTCLOUD
     WORDLISTS
