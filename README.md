@@ -145,7 +145,7 @@ Before installing GarudRecon, ensure you have:
 ### Docker
 > **Note:** Docker support is coming soon. For now, please use the Git Clone or prebuilt binaries installation method.
 
-### Using Git Clone
+### Using Git Clone (Recommended)
 ```
 git clone --depth 1 https://github.com/rix4uni/GarudRecon.git
 cd GarudRecon
@@ -159,6 +159,8 @@ unzip v0.1.2.zip
 cd GarudRecon
 bash configure
 ```
+
+> **Note:** The `configure` script automatically downloads and installs pre-built binaries from [GarudReconBinary nightly releases](https://github.com/rix4uni/GarudReconBinary/releases/download/nightly/GarudReconBinary.zip) for faster installation.
 
 ## Quick Start
 
