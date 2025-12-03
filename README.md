@@ -130,7 +130,7 @@ bash configure
 
 ## Usage
 
-<details>
+<details open>
   <summary><b>SmallScope Mode</b></summary>
 
 ```yaml
@@ -178,7 +178,7 @@ Example:
 </details>
 
 
-<details>
+<details open>
   <summary><b>MediumScope Mode</b></summary>
 
 ```yaml
@@ -239,7 +239,7 @@ Example:
 </details>
 
 
-<details>
+<details open>
   <summary><b>LargeScope Mode</b></summary>
 
 ```yaml
@@ -300,7 +300,7 @@ Example:
 </details>
 
 
-<details>
+<details open>
   <summary><b>CidrScope Mode</b></summary>
 
 ```
@@ -310,7 +310,7 @@ Example:
 </details>
 
 
-<details>
+<details open>
   <summary><b>Workflow Mode</b></summary>
 
 ```yaml
@@ -352,7 +352,7 @@ done
 </details>
 
 
-<details>
+<details open>
   <summary><b>Fleet Mode</b></summary>
 
 ## This is temporary setup for now in next update i'll add progress bar
@@ -402,7 +402,7 @@ Example:
 </details>
 
 
-<details>
+<details open>
   <summary><b>CronJobs Mode</b></summary>
 
 ```yaml
@@ -433,7 +433,7 @@ Example:
 <img src="img/output/cronjobs_discord.png"/>
 </details>
 
-<details>
+<details open>
   <summary><b>✅ Short commands</b></summary>
 
 ```yaml
@@ -659,7 +659,7 @@ _Thanks for creating awesome tools_
 </details>
 
 
-<details>
+<details open>
   <summary><b><a href="https://github.com/tomnomnom">tomnomnom</a></b></summary>
 
 - [httprobe](https://github.com/tomnomnom/httprobe)
@@ -677,23 +677,63 @@ _Thanks for creating awesome tools_
 </details>
 
 
-<details>
+<details open>
   <summary><b><a href="https://github.com/rix4uni">rix4uni</a></b></summary>
 
-- [techx](https://github.com/rix4uni/techx)
-- [unew](https://github.com/rix4uni/unew)
+- [gocl](https://github.com/rix4uni/gocl)
+- [gobuild](https://github.com/rix4uni/gobuild)
+- [subdog](https://github.com/rix4uni/subdog)
+- [stoppiracy](https://github.com/rix4uni/stoppiracy)
+- [oosexclude](https://github.com/rix4uni/oosexclude)
+- [emailextractor](https://github.com/rix4uni/emailextractor)
+- [nsfwdetector](https://github.com/rix4uni/nsfwdetector)
+- [querygen](https://github.com/rix4uni/querygen)
+- [haktrailsfree](https://github.com/rix4uni/haktrailsfree)
+- [org2asn](https://github.com/rix4uni/org2asn)
+- [vulntechfinder](https://github.com/rix4uni/vulntechfinder)
+- [sftpsender](https://github.com/rix4uni/sftpsender)
+- [wordcount](https://github.com/rix4uni/wordcount)
+- [whoxysubs](https://github.com/rix4uni/whoxysubs)
+- [techfinder](https://github.com/rix4uni/techfinder)
 - [ip2org](https://github.com/rix4uni/ip2org)
 - [certinfo](https://github.com/rix4uni/certinfo)
 - [xsschecker](https://github.com/rix4uni/xsschecker)
+- [xssrecon](https://github.com/rix4uni/xssrecon)
+- [gosqli](https://github.com/rix4uni/gosqli)
 - [portmap](https://github.com/rix4uni/portmap)
+- [tldscan](https://github.com/rix4uni/tldscan)
 - [paramfinder](https://github.com/rix4uni/paramfinder)
 - [Gxss](https://github.com/rix4uni/Gxss)
 - [msarjun](https://github.com/rix4uni/msarjun)
+- [socialfinder](https://github.com/rix4uni/socialfinder)
+- [waybackurlsx](https://github.com/rix4uni/waybackurlsx)
+- [originiphunter](https://github.com/rix4uni/originiphunter)
+- [GoLinkFinder](https://github.com/rix4uni/GoLinkFinder)
+- [linkinspector](https://github.com/rix4uni/linkinspector)
+- [wordgen](https://github.com/rix4uni/wordgen)
+- [bbpscraper](https://github.com/rix4uni/bbpscraper)
+- [pvreplace](https://github.com/rix4uni/pvreplace)
+- [ftpx](https://github.com/rix4uni/ftpx)
+- [subzy](https://github.com/rix4uni/subzy)
+- [timelimitx](https://github.com/rix4uni/timelimitx)
+- [jscrawler](https://github.com/rix4uni/jscrawler)
+- [robotxt](https://github.com/rix4uni/robotxt)
+- [pathcrawler](https://github.com/rix4uni/pathcrawler)
+- [uforall](https://github.com/rix4uni/uforall)
+- [emailfinder](https://github.com/rix4uni/emailfinder)
+- [favinfo](https://github.com/rix4uni/favinfo)
+- [dlevel](https://github.com/rix4uni/dlevel)
+- [subdomainfuzz](https://github.com/rix4uni/subdomainfuzz)
+- [cspfinder](https://github.com/rix4uni/cspfinder)
+- [dirless](https://github.com/rix4uni/dirless)
+- [gitxpose](https://github.com/rix4uni/gitxpose)
+- [bxssreplace](https://github.com/rix4uni/bxssreplace)
+- [ipfinder](https://github.com/rix4uni/ipfinder)
 
 </details>
 
 
-<details>
+<details open>
   <summary><b><a href="https://github.com/hakluke">hakluke</a></b></summary>
 
 - [hakrawler](https://github.com/hakluke/hakrawler)
@@ -707,7 +747,7 @@ _Thanks for creating awesome tools_
 </details>
 
 
-<details>
+<details open>
   <summary><b><a href="https://github.com/jaeles-project">jaeles-project</a></b></summary>
 
 - [gospider](https://github.com/jaeles-project/gospider)
@@ -716,7 +756,7 @@ _Thanks for creating awesome tools_
 </details>
 
 
-<details>
+<details open>
   <summary><b><a href="https://github.com/lc">lc</a></b></summary>
 
 - [gau](https://github.com/lc/gau)
