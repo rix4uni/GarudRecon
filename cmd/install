@@ -1279,89 +1279,89 @@ IPFINDER() {
     install_gocl_tool "IPFINDER" "ipfinder" "github.com/rix4uni/ipfinder"
 }
 
-XXEINJECTOR() {
-    install_pip3_tool "XXEINJECTOR" "xxeinjector" "xxeinjector --no-cache-dir --break-system-packages"
-}
+# XXEINJECTOR() {
+#     install_pip3_tool "XXEINJECTOR" "xxeinjector" "xxeinjector --no-cache-dir --break-system-packages"
+# }
 
-XXER() {
-    install_pip3_tool "XXER" "xxer" "xxer --no-cache-dir --break-system-packages"
-}
+# XXER() {
+#     install_pip3_tool "XXER" "xxer" "xxer --no-cache-dir --break-system-packages"
+# }
 
 XSRFPROBE() {
     install_pip3_tool "XSRFPROBE" "xsrfprobe" "xsrfprobe --no-cache-dir --break-system-packages"
 }
 
-CSRF_SCANNER() {
-    install_pip3_tool "CSRF_SCANNER" "csrf-scanner" "csrf-scanner --no-cache-dir --break-system-packages"
-}
+# CSRF_SCANNER() {
+#     install_pip3_tool "CSRF_SCANNER" "csrf-scanner" "csrf-scanner --no-cache-dir --break-system-packages"
+# }
 
-CORSY() {
-    install_pip3_tool "CORSY" "corsy" "corsy --no-cache-dir --break-system-packages"
-}
+# CORSY() {
+#     install_pip3_tool "CORSY" "corsy" "corsy --no-cache-dir --break-system-packages"
+# }
 
-CORS_SCANNER() {
-    install_pip3_tool "CORS_SCANNER" "cors-scanner" "cors-scanner --no-cache-dir --break-system-packages"
-}
+# CORS_SCANNER() {
+#     install_pip3_tool "CORS_SCANNER" "cors-scanner" "cors-scanner --no-cache-dir --break-system-packages"
+# }
 
-JWT_CRACKER() {
-    install_pip3_tool "JWT_CRACKER" "jwt-cracker" "jwt-cracker --no-cache-dir --break-system-packages"
-}
+# JWT_CRACKER() {
+#     install_pip3_tool "JWT_CRACKER" "jwt-cracker" "jwt-cracker --no-cache-dir --break-system-packages"
+# }
 
-JWT_TOOL() {
-    install_pip3_tool "JWT_TOOL" "jwt_tool" "jwt_tool --no-cache-dir --break-system-packages"
-}
+# JWT_TOOL() {
+#     install_pip3_tool "JWT_TOOL" "jwt_tool" "jwt_tool --no-cache-dir --break-system-packages"
+# }
 
-GRAPHW00F() {
-    install_pip3_tool "GRAPHW00F" "graphw00f" "graphw00f --no-cache-dir --break-system-packages"
-}
+# GRAPHW00F() {
+#     install_pip3_tool "GRAPHW00F" "graphw00f" "graphw00f --no-cache-dir --break-system-packages"
+# }
 
-GRAPHQLMAP() {
-    install_custom_tool "GRAPHQLMAP" "graphqlmap" "git clone https://github.com/swisskyrepo/GraphQLmap.git --depth 1 /opt/GraphQLmap &>/dev/null && cd /opt/GraphQLmap && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && echo -e '#!/usr/bin/env bash\\nexec python3 \"'\"\$(pwd)\"'/graphqlmap.py\" \"\$@\"' | sudo tee /usr/local/bin/graphqlmap &>/dev/null && sudo chmod +x /usr/local/bin/graphqlmap && cd - &>/dev/null"
-}
+# GRAPHQLMAP() {
+#     install_custom_tool "GRAPHQLMAP" "graphqlmap" "git clone https://github.com/swisskyrepo/GraphQLmap.git --depth 1 /opt/GraphQLmap &>/dev/null && cd /opt/GraphQLmap && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && echo -e '#!/usr/bin/env bash\\nexec python3 \"'\"\$(pwd)\"'/graphqlmap.py\" \"\$@\"' | sudo tee /usr/local/bin/graphqlmap &>/dev/null && sudo chmod +x /usr/local/bin/graphqlmap && cd - &>/dev/null"
+# }
 
-POSTMAN_TO_SWAGGER() {
-    install_pip3_tool "POSTMAN_TO_SWAGGER" "postman-to-swagger" "postman-to-swagger --no-cache-dir --break-system-packages"
-}
+# POSTMAN_TO_SWAGGER() {
+#     install_pip3_tool "POSTMAN_TO_SWAGGER" "postman-to-swagger" "postman-to-swagger --no-cache-dir --break-system-packages"
+# }
 
-HOSTHEADER_INJECTOR() {
-    install_pip3_tool "HOSTHEADER_INJECTOR" "hostheader-injector" "hostheader-injector --no-cache-dir --break-system-packages"
-}
+# HOSTHEADER_INJECTOR() {
+#     install_pip3_tool "HOSTHEADER_INJECTOR" "hostheader-injector" "hostheader-injector --no-cache-dir --break-system-packages"
+# }
 
-CRLFUZZ() {
-    install_pip3_tool "CRLFUZZ" "crlfuzz" "crlfuzz --no-cache-dir --break-system-packages"
-}
+# CRLFUZZ() {
+#     install_pip3_tool "CRLFUZZ" "crlfuzz" "crlfuzz --no-cache-dir --break-system-packages"
+# }
 
-DOTDOTPWN() {
-    install_custom_tool "DOTDOTPWN" "dotdotpwn" "git clone https://github.com/wireghoul/dotdotpwn.git --depth 1 /opt/dotdotpwn &>/dev/null && cd /opt/dotdotpwn && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && echo -e '#!/usr/bin/env bash\\nexec python3 \"'\"\$(pwd)\"'/dotdotpwn.py\" \"\$@\"' | sudo tee /usr/local/bin/dotdotpwn &>/dev/null && sudo chmod +x /usr/local/bin/dotdotpwn && cd - &>/dev/null"
-}
+# DOTDOTPWN() {
+#     install_custom_tool "DOTDOTPWN" "dotdotpwn" "git clone https://github.com/wireghoul/dotdotpwn.git --depth 1 /opt/dotdotpwn &>/dev/null && cd /opt/dotdotpwn && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && echo -e '#!/usr/bin/env bash\\nexec python3 \"'\"\$(pwd)\"'/dotdotpwn.py\" \"\$@\"' | sudo tee /usr/local/bin/dotdotpwn &>/dev/null && sudo chmod +x /usr/local/bin/dotdotpwn && cd - &>/dev/null"
+# }
 
-NOSQLMAP() {
-    install_custom_tool "NOSQLMAP" "nosqlmap" "git clone https://github.com/codingo/NoSQLMap.git --depth 1 /opt/NoSQLMap &>/dev/null && cd /opt/NoSQLMap && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && echo -e '#!/usr/bin/env bash\\nexec python3 \"'\"\$(pwd)\"'/nosqlmap.py\" \"\$@\"' | sudo tee /usr/local/bin/nosqlmap &>/dev/null && sudo chmod +x /usr/local/bin/nosqlmap && cd - &>/dev/null"
-}
+# NOSQLMAP() {
+#     install_custom_tool "NOSQLMAP" "nosqlmap" "git clone https://github.com/codingo/NoSQLMap.git --depth 1 /opt/NoSQLMap &>/dev/null && cd /opt/NoSQLMap && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && echo -e '#!/usr/bin/env bash\\nexec python3 \"'\"\$(pwd)\"'/nosqlmap.py\" \"\$@\"' | sudo tee /usr/local/bin/nosqlmap &>/dev/null && sudo chmod +x /usr/local/bin/nosqlmap && cd - &>/dev/null"
+# }
 
-YSOSERIAL() {
-    install_custom_tool "YSOSERIAL" "ysoserial" "wget -q https://github.com/rix4uni/ysoserial/releases/download/v0.0.8-20220404-155839b/ysoserial-all.jar -O /opt/ysoserial.jar && echo -e '#!/usr/bin/env bash\\nexec java -jar /opt/ysoserial.jar \"\$@\"' | sudo tee /usr/local/bin/ysoserial &>/dev/null && sudo chmod +x /usr/local/bin/ysoserial"
-}
+# YSOSERIAL() {
+#     install_custom_tool "YSOSERIAL" "ysoserial" "wget -q https://github.com/rix4uni/ysoserial/releases/download/v0.0.8-20220404-155839b/ysoserial-all.jar -O /opt/ysoserial.jar && echo -e '#!/usr/bin/env bash\\nexec java -jar /opt/ysoserial.jar \"\$@\"' | sudo tee /usr/local/bin/ysoserial &>/dev/null && sudo chmod +x /usr/local/bin/ysoserial"
+# }
 
 PPMAP() {
     install_go_tool "PPMAP" "ppmap" "github.com/kleiton0x00/ppmap@latest"
 }
 
-SMUGGLER() {
-    START_SPINNER "${BGREEN}SMUGGLER${RESET}"
+# SMUGGLER() {
+#     START_SPINNER "${BGREEN}SMUGGLER${RESET}"
     
-    mkdir -p tools
-    git clone https://github.com/defparam/smuggler.git --depth 1 tools/smuggler &>/dev/null
-    cd tools/smuggler && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && cd - &>/dev/null
+#     mkdir -p tools
+#     git clone https://github.com/defparam/smuggler.git --depth 1 tools/smuggler &>/dev/null
+#     cd tools/smuggler && pip3 install -r requirements.txt --no-cache-dir --break-system-packages &>/dev/null && cd - &>/dev/null
     
-    if [[ -f "tools/smuggler/smuggler.py" ]]; then
-        STOP_SPINNER
-        log_message "${BGREEN}[+] SMUGGLER - INSTALLED${RESET}: ${TIME} seconds"
-    else
-        STOP_SPINNER
-        log_message "${BRED}[x] SMUGGLER - INSTALLATION FAILED${RESET}: ${TIME} seconds"
-    fi
-}
+#     if [[ -f "tools/smuggler/smuggler.py" ]]; then
+#         STOP_SPINNER
+#         log_message "${BGREEN}[+] SMUGGLER - INSTALLED${RESET}: ${TIME} seconds"
+#     else
+#         STOP_SPINNER
+#         log_message "${BRED}[x] SMUGGLER - INSTALLATION FAILED${RESET}: ${TIME} seconds"
+#     fi
+# }
 
 NOMORE403() {
     install_gocl_tool "NOMORE403" "nomore403" "github.com/devploit/nomore403"
