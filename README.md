@@ -98,37 +98,37 @@ Before installing GarudRecon, ensure you have:
 
 <p align="center">
 <a href="https://m.do.co/c/43c704381b79" target="_blank">
-<img src="image/referrals/digitalocean_200.png"/>
+<img src="images/referrals/digitalocean_200.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://login.linode.com/signup" target="_blank">
-<img src="image/referrals/linode.png"/>
+<img src="images/referrals/linode.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://cloud.ibm.com/docs/overview?topic=overview-tutorial-try-for-free" target="_blank">
-<img src="image/referrals/ibm_cloud.png"/>
+<img src="images/referrals/ibm_cloud.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://aws.com" target="_blank">
-<img src="image/referrals/aws.png"/>
+<img src="images/referrals/aws.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://azure.com" target="_blank">
-<img src="image/referrals/azure.png"/>
+<img src="images/referrals/azure.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://cloud.intechdc.com/?affid=443&oid=99" target="_blank">
-<img src="image/referrals/intechdc.png"/>
+<img src="images/referrals/intechdc.png"/>
 </a>
 </p>
 </details>
@@ -253,7 +253,7 @@ Example:
 ```
 
 #### Output
-<img src="image/output/smallscope.png"/>
+<img src="images/output/smallscope.png"/>
 </details>
 
 
@@ -314,7 +314,7 @@ Example:
 ```
 
 #### Output
-<img src="image/output/mediumscope.png"/>
+<img src="images/output/mediumscope.png"/>
 </details>
 
 
@@ -375,7 +375,7 @@ Example:
 ```
 
 #### Output
-<img src="image/output/largescope.png"/>
+<img src="images/output/largescope.png"/>
 </details>
 
 
@@ -435,9 +435,9 @@ done
 ```
 
 #### Output
-<img src="image/output/GarudRecon-workflow-@rix4uni.png"/>
-<img src="image/output/GarudRecon-workflow-subfinder-@rix4uni.png"/>
-<img src="image/output/GarudRecon-workflow-subfinder-output-@rix4uni.png"/>
+<img src="images/output/GarudRecon-workflow-@rix4uni.png"/>
+<img src="images/output/GarudRecon-workflow-subfinder-@rix4uni.png"/>
+<img src="images/output/GarudRecon-workflow-subfinder-output-@rix4uni.png"/>
 </details>
 
 
@@ -559,8 +559,8 @@ Example:
 ```
 
 #### Output
-<img src="image/output/cronjobs.png"/>
-<img src="image/output/cronjobs_discord.png"/>
+<img src="images/output/cronjobs.png"/>
+<img src="images/output/cronjobs_discord.png"/>
 </details>
 
 <details open>
