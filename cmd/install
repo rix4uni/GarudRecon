@@ -128,19 +128,59 @@ STOP_SPINNER() {
 }
 
 # Download and extract pre-built binaries
-# This function downloads binaries once and extracts them to ~/go/bin/
+# This function downloads binaries and uses GarudReconBinary to place them in correct locations
 download_binaries() {
     if [[ "$USE_BINARY" == false ]]; then
         return
     fi
     
-    # Ensure ~/go/bin is in PATH for command -v checks
-    export PATH="$PATH:$HOME/go/bin"
+    # Ensure common bin directories are in PATH for command -v checks
+    export PATH="$PATH:$HOME/go/bin:/usr/local/bin:$HOME/.local/bin:$HOME/.cargo/bin"
     
     # Always download fresh binaries (unless --no-binary flag is used)
     START_SPINNER "${BGREEN}DOWNLOADING PRE-BUILT BINARIES${RESET}"
     
-    # Download the binary zip file
+    # Step 1: Install Go if not already installed (following exact user steps)
+    if ! command -v go &>/dev/null; then
+        # Remove broken Go installation if exists
+        sudo rm -rf /usr/local/go &>/dev/null
+        # Install Go using the exact gist script command
+        curl -s "https://gist.githubusercontent.com/rix4uni/c412ca956ea3bfa114bf4b615a9762bc/raw/11e3b54333b9760973a3dec5c5e71d9507971333/go.sh" | bash &>/dev/null && source ~/.bashrc &>/dev/null
+        export PATH="$PATH:/usr/local/go/bin"
+    fi
+    
+    # Ensure Go is in PATH
+    export PATH="$PATH:/usr/local/go/bin"
+    
+    # Step 2-4: Install GarudReconBinary tool if not already installed
+    if ! command -v GarudReconBinary &>/dev/null; then
+        # Clean up any existing clone
+        if [[ -d "GarudReconBinary" ]]; then
+            rm -rf GarudReconBinary
+        fi
+        # Step 2: Clone GarudReconBinary
+        git clone https://github.com/rix4uni/GarudReconBinary.git --depth 1 &>/dev/null
+        if [[ -d "GarudReconBinary" ]]; then
+            # Step 3: cd into GarudReconBinary
+            cd GarudReconBinary
+            # Step 4: go install
+            go install &>/dev/null
+            cd - &>/dev/null
+            # Clean up clone directory
+            rm -rf GarudReconBinary
+        fi
+    fi
+    
+    # Ensure GarudReconBinary is in PATH
+    export PATH="$PATH:$HOME/go/bin"
+    
+    # Step 5: Create config directory
+    mkdir -p ~/.config/GarudReconBinary
+    
+    # Step 6: Download tools.json
+    wget -q -O ~/.config/GarudReconBinary/tools.json https://raw.githubusercontent.com/rix4uni/GarudReconBinary/refs/heads/main/tools.json
+    
+    # Step 7: Download the binary zip file
     wget -q https://github.com/rix4uni/GarudReconBinary/releases/download/nightly/GarudReconBinary.zip -O GarudReconBinary.zip
     
     if [[ ! -f GarudReconBinary.zip ]]; then
@@ -150,11 +190,17 @@ download_binaries() {
         return
     fi
     
-    # Create go/bin directory if it doesn't exist
-    mkdir -p ~/go/bin
+    # Check if GarudReconBinary tool is available
+    if ! command -v GarudReconBinary &>/dev/null; then
+        STOP_SPINNER
+        log_message "${YELLOW}[~] GarudReconBinary tool not available, will build from source${RESET}"
+        USE_BINARY=false
+        rm -rf GarudReconBinary.zip
+        return
+    fi
     
-    # Unzip to ~/go/bin/
-    unzip -q -j GarudReconBinary.zip -d ~/go/bin/ &>/dev/null
+    # Step 8: Use GarudReconBinary to extract and place binaries in correct locations
+    GarudReconBinary --paste &>/dev/null
     
     # Clean up zip file
     rm -rf GarudReconBinary.zip
@@ -342,9 +388,6 @@ START_EPOCH=$(date +%s)
 
 echo -e "Using $CONFIG_PATH"
 
-# Download pre-built binaries if USE_BINARY is true
-download_binaries
-
 # Ensure ~/go/bin is in PATH globally after binaries are downloaded
 # This is needed for install_gocl_tool() checks and subsequent tool usage
 export PATH="$PATH:$HOME/go/bin"
@@ -421,6 +464,9 @@ EOF
     STOP_SPINNER
     echo -e "${BGREEN}[+] VARIABLES - SETUP${RESET}: ${TIME} seconds"
 }
+
+# Download pre-built binaries if USE_BINARY is true
+download_binaries
 
 GO() {
     START_SPINNER "${BGREEN}GO${RESET}"
