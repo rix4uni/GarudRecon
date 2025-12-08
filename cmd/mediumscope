@@ -2328,19 +2328,10 @@ LFI(){
 	# LINUX LFI
 	if [ "$USE_GFPATTERNS" = "TRUE" ]; then
 		cat ${URLSDIR}/filteredurls.txt | gf lfi | unew -el -t -q ${URLSDIR}/gf_lfi.txt
-		cat ${URLSDIR}/gf_lfi.txt | pvreplace -silent -payload ${LFI_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null | unew -el -t -q ${VULNDIR}/lfi_pvreplace.txt
+		cat ${URLSDIR}/gf_lfi.txt | lfifinder --silent --vuln | unew -el -q ${ROOT_VULNDIR}/lfi.txt
 	else
 		# if USE_GFPATTERNS is FALSE then scan all parameters	
-		cat ${URLSDIR}/filteredurls.txt | pvreplace -silent -payload ${LFI_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null | unew -el -t -q ${VULNDIR}/lfi_pvreplace.txt
-	fi
-
-	# Common steps for both TRUE and FALSE conditions
-	ffuf -v -u FUZZ -w ${VULNDIR}/lfi_pvreplace.txt -t 40 -rate 1000 -mr "root:[x*]:0:0" 2>> >(sed "s/^/${FUNCNAME[0]}: /" >> "$ERRORLOGFILE") >/dev/null | unew -el -t -q ${VULNDIR}/ffuf_lfi.txt
-	cat ${VULNDIR}/ffuf_lfi.txt | grep -a "| URL |" | sed 's/| URL | //' | unew -el -q ${VULNDIR}/lfi.txt
-
-	# Check if the file has more than 0 lines
-	if [ -f "${VULNDIR}/lfi.txt" ] && [ $(wc -l < "${VULNDIR}/lfi.txt") -gt 0 ]; then
-	    cp "${VULNDIR}/lfi.txt" "${ROOT_VULNDIR}/lfi.txt"
+		cat ${URLSDIR}/filteredurls.txt | lfifinder --silent --vuln | unew -el -q ${ROOT_VULNDIR}/lfi.txt
 	fi
 
 	# WINDOWS LFI
