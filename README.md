@@ -1,5 +1,4 @@
-![GarudRecon](https://github.com/user-attachments/assets/bbacc7c3-396b-4ca6-b6aa-ee30511ba9e9)
-
+<img src="images/banner.png"/>
 
 <p align="center">
 <a href="#"><img src="https://madewithlove.org.in/badge.svg"></a>
