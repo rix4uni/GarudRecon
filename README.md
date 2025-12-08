@@ -98,37 +98,37 @@ Before installing GarudRecon, ensure you have:
 
 <p align="center">
 <a href="https://m.do.co/c/43c704381b79" target="_blank">
-<img src="img/referrals/digitalocean_200.png"/>
+<img src="image/referrals/digitalocean_200.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://login.linode.com/signup" target="_blank">
-<img src="img/referrals/linode.png"/>
+<img src="image/referrals/linode.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://cloud.ibm.com/docs/overview?topic=overview-tutorial-try-for-free" target="_blank">
-<img src="img/referrals/ibm_cloud.png"/>
+<img src="image/referrals/ibm_cloud.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://aws.com" target="_blank">
-<img src="img/referrals/aws.png"/>
+<img src="image/referrals/aws.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://azure.com" target="_blank">
-<img src="img/referrals/azure.png"/>
+<img src="image/referrals/azure.png"/>
 </a>
 </p>
 
 <p align="center">
 <a href="https://cloud.intechdc.com/?affid=443&oid=99" target="_blank">
-<img src="img/referrals/intechdc.png"/>
+<img src="image/referrals/intechdc.png"/>
 </a>
 </p>
 </details>
@@ -253,7 +253,7 @@ Example:
 ```
 
 #### Output
-<img src="img/output/smallscope.png"/>
+<img src="image/output/smallscope.png"/>
 </details>
 
 
@@ -314,7 +314,7 @@ Example:
 ```
 
 #### Output
-<img src="img/output/mediumscope.png"/>
+<img src="image/output/mediumscope.png"/>
 </details>
 
 
@@ -375,7 +375,7 @@ Example:
 ```
 
 #### Output
-<img src="img/output/largescope.png"/>
+<img src="image/output/largescope.png"/>
 </details>
 
 
@@ -435,9 +435,9 @@ done
 ```
 
 #### Output
-<img src="img/output/GarudRecon-workflow-@rix4uni.png"/>
-<img src="img/output/GarudRecon-workflow-subfinder-@rix4uni.png"/>
-<img src="img/output/GarudRecon-workflow-subfinder-output-@rix4uni.png"/>
+<img src="image/output/GarudRecon-workflow-@rix4uni.png"/>
+<img src="image/output/GarudRecon-workflow-subfinder-@rix4uni.png"/>
+<img src="image/output/GarudRecon-workflow-subfinder-output-@rix4uni.png"/>
 </details>
 
 
@@ -559,8 +559,8 @@ Example:
 ```
 
 #### Output
-<img src="img/output/cronjobs.png"/>
-<img src="img/output/cronjobs_discord.png"/>
+<img src="image/output/cronjobs.png"/>
+<img src="image/output/cronjobs_discord.png"/>
 </details>
 
 <details open>
@@ -972,11 +972,11 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed version history and updates.
 
 > **Note:** Changelog file coming soon. Check [releases](https://github.com/rix4uni/GarudRecon/releases) for version updates.
 
-## Mindmap/Workflow
-_See Workflow in different format [Workflow](Workflow)_
+## Mindmap
+_See Mindmap in different format [mindmap](mindmap)_
 
 <p align="center"> 
-<a href="Workflow/Scope-Based-Recon.png" target="_blank"> 
-<img src="Workflow/Scope-Based-Recon.png"/>
+<a href="mindmap/Scope-Based-Recon.png" target="_blank"> 
+<img src="mindmap/Scope-Based-Recon.png"/>
 </a>  
 </p>
