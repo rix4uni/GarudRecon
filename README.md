@@ -148,14 +148,14 @@ Before installing GarudRecon, ensure you have:
 ### Quick Install (No Clone Required)
 ```
 # Install directly via curl (recommended for quick setup)
-bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure)
+bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/setup)
 ```
 
 ### Using Git Clone
 ```
 git clone --depth 1 https://github.com/rix4uni/GarudRecon.git
 cd GarudRecon
-bash configure
+bash setup
 ```
 
 ### Download prebuilt binaries
@@ -163,10 +163,10 @@ bash configure
 wget -q https://github.com/rix4uni/GarudRecon/archive/refs/tags/v0.1.2.zip
 unzip v0.1.2.zip
 cd GarudRecon
-bash configure
+bash setup
 ```
 
-> **Note:** The `configure` script automatically downloads and installs pre-built binaries from [GarudReconBinary nightly releases](https://github.com/rix4uni/GarudReconBinary/releases/download/nightly/GarudReconBinary.zip) for faster installation.
+> **Note:** The `setup` script automatically downloads and installs pre-built binaries from [GarudReconBinary nightly releases](https://github.com/rix4uni/GarudReconBinary/releases/download/nightly/GarudReconBinary.zip) for faster installation.
 
 ## Quick Start
 
@@ -473,7 +473,7 @@ master:
 Run this command directly on your master VPS (no need to clone the repo):
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure)
+bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/setup)
 ```
 
 3. **Setup in workers (run this in master VPS):**
@@ -487,7 +487,7 @@ After master setup is complete, run this command on the master VPS to automatica
 bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/fleetsetup)
 ```
 
-> **Note:** Both `configure` and `fleetsetup` can be run directly via curl without cloning the repository.
+> **Note:** Both `setup` and `fleetsetup` can be run directly via curl without cloning the repository.
 
 Options:
 - `--skip-install` - Skip GarudRecon installation (only setup SSH keys)
@@ -615,7 +615,7 @@ For visual demonstrations, see the output screenshots in each mode's section abo
 ## FAQ
 
 **Q: Do I need to install all tools manually?**  
-A: No, the `configure` script automatically installs most tools. If any tool fails, you'll need to install it manually.
+A: No, the `setup` script automatically installs most tools. If any tool fails, you'll need to install it manually.
 
 **Q: Can I run scans without root access?**  
 A: Some tools require root access for certain operations (like port scanning). It's recommended to run as root.

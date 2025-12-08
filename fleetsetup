@@ -217,7 +217,7 @@ while IFS= read -r worker_line; do
   # Install GarudRecon on worker
   if [[ "$TEST_ONLY" != "true" && "$SKIP_INSTALL" != "true" ]]; then
     echo -e "  ${YELLOW}[*]${NC} Installing GarudRecon..."
-    if sshpass -p "$worker_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure)" &>/dev/null; then
+    if sshpass -p "$worker_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/setup)" &>/dev/null; then
       echo -e "  ${GREEN}[+]${NC} GarudRecon installation completed"
     else
       echo -e "  ${YELLOW}[~]${NC} GarudRecon installation may have issues (check manually)"
