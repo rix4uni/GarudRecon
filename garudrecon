@@ -22,7 +22,7 @@ Available Commands:
   largescope              Full-scale recon for an organization.
   cidrscope               Run a full scan against one or more CIDR ranges.
   workflow                Chain multiple tools into a reusable pipeline so you can run complex scans with a single command.
-  fleet                   Distribute work across many VPS instances — split input automatically and run modules in parallel on 100+ hosts.
+  fleet                   Distribute work across many VPS instances — split input automatically and run workflows in parallel on 100+ hosts.
   cronjobs                Schedule and monitor recurring recon tasks (subdomains, open ports, JS leaks, templates, alerts).
 
 Flags:

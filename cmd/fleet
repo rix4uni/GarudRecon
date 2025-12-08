@@ -1,11 +1,10 @@
 #!/bin/bash
 
-
 # Help function
 function show_help() {
   cat <<EOF
-Distribute work across many VPS instances — split input automatically and run modules in parallel on 100+ hosts.
-Use one command to shard data, push jobs to remote nodes, run the chosen module, and collect consolidated results. Perfect for massively-parallel scans.
+Distribute work across many VPS instances — split input automatically and run workflows in parallel on 100+ hosts.
+Use one command to shard data, push jobs to remote nodes, run the chosen workflow, and collect consolidated results. Perfect for massively-parallel scans.
 
 Usage:
   garudrecon fleet [flags]
@@ -13,18 +12,17 @@ Usage:
 Flags:
   -i, --input       Pass the input
   -o, --output      Location where you want to save output
-  -m, --module      module name you want to run
+  -m, --module      workflow name you want to run
   -v, --verbose     enable verbose mode
-  -h, --help        help for modules
+  -h, --help        help for workflows
 
 Example:
-  garudrecon fleet -m <module> -i <wildcards> -o <file> [--verbose]
+  garudrecon fleet -m <workflow> -i <wildcards> -o <file> [--verbose]
   garudrecon fleet -m httpx -i subs.txt -o subs.httpx --verbose
 EOF
 }
 
-
-# --- normal module execution ---
+# --- normal workflow execution ---
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -55,100 +53,491 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Input validation
+if [[ -z "$INPUT" ]] || [[ -z "$OUTPUT" ]] || [[ -z "$MODULE" ]]; then
+  echo "Error: -i (input), -o (output), and -m (workflow) are required"
+  show_help
+  exit 1
+fi
 
-# Creating directory
+# Validate input file exists
+if [[ ! -f "$INPUT" ]]; then
+  echo "Error: Input file '$INPUT' does not exist"
+  exit 1
+fi
+
+# Validate input file is not empty
+if [[ ! -s "$INPUT" ]]; then
+  echo "Error: Input file '$INPUT' is empty"
+  exit 1
+fi
+
+# Validate fleet.yaml configuration file exists
+FLEET_YAML="$HOME/.garudrecon/fleet.yaml"
+if [[ ! -f "$FLEET_YAML" ]]; then
+  echo "Error: fleet.yaml file not found at $FLEET_YAML"
+  echo "Please create the file with worker and master credentials."
+  echo "Example format:"
+  echo "  worker:"
+  echo "    - root@IP1:PASSWORD1"
+  echo "    - root@IP2:PASSWORD2"
+  echo "  master:"
+  echo "    - root@IP:MASTER_PASSWORD"
+  exit 1
+fi
+
+# Validate workflow JSON exists
+if [[ ! -f "$HOME/.garudrecon/workflow/${MODULE}.json" ]]; then
+  echo "Error: Workflow file '$HOME/.garudrecon/workflow/${MODULE}.json' does not exist"
+  exit 1
+fi
+
+# Check if unew is available
+if ! command -v unew &>/dev/null; then
+  echo "Error: unew command not found. Please install it first."
+  exit 1
+fi
+
+# Check if yq is available, install if missing
+if ! command -v yq &>/dev/null; then
+  echo "[*] yq not found, installing..."
+  # Try package manager first
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get update -qq &>/dev/null
+    sudo apt-get install -y yq &>/dev/null || {
+      # Fallback to Go install
+      if command -v go &>/dev/null; then
+        go install github.com/mikefarah/yq/v4@latest &>/dev/null
+        export PATH="$PATH:$HOME/go/bin"
+      else
+        echo "Error: Cannot install yq. Please install it manually:"
+        echo "  apt-get install yq"
+        echo "  OR"
+        echo "  go install github.com/mikefarah/yq/v4@latest"
+        exit 1
+      fi
+    }
+  elif command -v yum &>/dev/null; then
+    sudo yum install -y yq &>/dev/null || {
+      if command -v go &>/dev/null; then
+        go install github.com/mikefarah/yq/v4@latest &>/dev/null
+        export PATH="$PATH:$HOME/go/bin"
+      else
+        echo "Error: Cannot install yq. Please install it manually."
+        exit 1
+      fi
+    }
+  elif command -v go &>/dev/null; then
+    go install github.com/mikefarah/yq/v4@latest &>/dev/null
+    export PATH="$PATH:$HOME/go/bin"
+  else
+    echo "Error: yq is required but not installed. Please install it:"
+    echo "  apt-get install yq"
+    echo "  OR"
+    echo "  go install github.com/mikefarah/yq/v4@latest"
+    exit 1
+  fi
+  
+  # Verify installation
+  if ! command -v yq &>/dev/null; then
+    echo "Error: yq installation failed. Please install manually."
+    exit 1
+  fi
+  echo "[+] yq installed successfully"
+fi
+
+# Parse YAML configuration
+parse_fleet_yaml() {
+  local yaml_file="$1"
+  
+  # Validate YAML structure
+  if ! yq eval '.worker' "$yaml_file" &>/dev/null; then
+    echo "Error: Missing 'worker' section in fleet.yaml"
+    exit 1
+  fi
+  
+  if ! yq eval '.master' "$yaml_file" &>/dev/null; then
+    echo "Error: Missing 'master' section in fleet.yaml"
+    exit 1
+  fi
+  
+  # Extract worker credentials (filter out null/empty values)
+  WORKER_CREDS_FILTERED=$(yq eval '.worker[]' "$yaml_file" 2>/dev/null | grep -v '^null$' | grep -v '^$' | grep -v '^\s*$')
+  
+  # Extract master credentials (filter out null/empty values)
+  MASTER_CREDS_FILTERED=$(yq eval '.master[]' "$yaml_file" 2>/dev/null | grep -v '^null$' | grep -v '^$' | grep -v '^\s*$')
+  
+  # Validate we have workers
+  if [[ -z "$WORKER_CREDS_FILTERED" ]]; then
+    echo "Error: No valid workers found in fleet.yaml"
+    exit 1
+  fi
+  
+  # Validate we have master
+  if [[ -z "$MASTER_CREDS_FILTERED" ]]; then
+    echo "Error: No valid master found in fleet.yaml"
+    exit 1
+  fi
+}
+
+# Parse the fleet.yaml file
+parse_fleet_yaml "$FLEET_YAML"
+
+# Initialize PIDs (will be set when processes start)
+downloaderPID=""
+localTailPID=""
+declare -a remoteTailPIDs=()
+
+# Cleanup function for interrupt handling (like Axiom)
+clean_up() {
+  echo -e "\n[!] Interrupt received, cleaning up..."
+  
+  # Kill background downloader if running
+  if [[ -n "$downloaderPID" ]]; then
+    kill -0 "$downloaderPID" 2>/dev/null && kill -9 "$downloaderPID" &>/dev/null
+  fi
+  
+  # Kill local tail process if running
+  if [[ -n "$localTailPID" ]]; then
+    kill -0 "$localTailPID" 2>/dev/null && kill -9 "$localTailPID" &>/dev/null
+  fi
+  
+  # Kill remote tail processes if running
+  for pid in "${remoteTailPIDs[@]}"; do
+    if [[ -n "$pid" ]]; then
+      kill -0 "$pid" 2>/dev/null && kill -9 "$pid" &>/dev/null || true
+    fi
+  done
+  
+  # Download partial results
+  if find "$FLEET_MODULEDIR" -maxdepth 1 -type f -name "${OUTPUT}_*" 2>/dev/null | head -n1 | read; then
+    echo "[*] Downloading partial results..."
+    if [[ -f "$DEST" ]]; then
+      rm -f "$DEST"
+    fi
+    cat "$FLEET_MODULEDIR"/${OUTPUT}_* 2>/dev/null | unew -q "$DEST" || touch "$DEST"
+    echo "[+] Partial results saved to $DEST"
+  fi
+  
+  # Kill tmux sessions on workers
+  echo "[*] Cleaning up worker sessions..."
+  while IFS= read -r worker_host; do
+    [[ -z "$worker_host" ]] && continue
+    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "tmux kill-session -t $UID 2>/dev/null" &>/dev/null || true
+  done <<< "$WORKER_HOSTS"
+  
+  # Cleanup temp files
+  rm -rf "$SPLITDIR"
+  
+  exit 1
+}
+
+# Trap signals for cleanup
+trap clean_up SIGINT SIGTERM
+
+# Prevent terminal hijacking
+stty -echoctl
+
+# Generate unique session ID (like Axiom)
+UID="${MODULE}+$(date +%s)${RANDOM}"
+
+# Creating directory structure
 FLEETDIR="$HOME/.garudrecon/fleet"
 FLEET_MODULEDIR="$HOME/.garudrecon/fleet/$MODULE"
 SPLITDIR="$HOME/.garudrecon/fleet/$MODULE/split-output"
+SCAN_DIR="$FLEETDIR/$UID"
+STATUS_DIR="$SCAN_DIR/status"
+COMPLETED_DIR="$STATUS_DIR/completed"
+INPROGRESS_DIR="$STATUS_DIR/inprogress"
 
-mkdir -p $FLEETDIR
-mkdir -p $FLEET_MODULEDIR
-mkdir -p $SPLITDIR
+mkdir -p "$FLEETDIR"
+mkdir -p "$FLEET_MODULEDIR"
+mkdir -p "$SPLITDIR"
+mkdir -p "$SCAN_DIR"
+mkdir -p "$COMPLETED_DIR"
+mkdir -p "$INPROGRESS_DIR"
+mkdir -p "$FLEET_MODULEDIR/logs"
 
+# Count total VPS (credentials already parsed from YAML)
+TOTALVPS=$(echo "$WORKER_CREDS_FILTERED" | wc -l)
 
-# Split files logic
-FILE=${INPUT}
-TOTALVPS=$(cat $HOME/worker.credentials | wc -l)
+# Validate we have workers (already validated in parse_fleet_yaml, but double-check)
+if [[ $TOTALVPS -eq 0 ]]; then
+  echo "Error: No valid workers found in fleet.yaml"
+  exit 1
+fi
+
+# Validate we have master (already validated in parse_fleet_yaml, but double-check)
+MASTER_COUNT=$(echo "$MASTER_CREDS_FILTERED" | wc -l)
+if [[ $MASTER_COUNT -eq 0 ]]; then
+  echo "Error: No valid master found in fleet.yaml"
+  exit 1
+fi
+
+# Split files logic (using Axiom's better algorithm)
+FILE="$INPUT"
 SPLIT=$(echo "$INPUT" | sed 's/\.[^.]*$//')
-
 LINES=$(wc -l < "$FILE")
-PER_VPS=$(( (LINES + $TOTALVPS - 1) / $TOTALVPS ))
-echo "TOTAL: $LINES, Lines per VPS: $PER_VPS"
 
-# Split the file
-split --numeric-suffixes=1 -a 3 -l $PER_VPS "$FILE" $SPLITDIR/${SPLIT}.
+# Calculate lines per file with even distribution
+lines_per_file=$((LINES / TOTALVPS))
+extra_lines=$((LINES % TOTALVPS))
 
-# Renames files like: $SPLITDIR/${SPLIT}.001 → $SPLITDIR/${SPLIT}.1
-for f in $SPLITDIR/${SPLIT}.[0-9][0-9][0-9]; do
-    n=$(echo "$f" | sed -E 's/.*\.0*([0-9]+)/\1/')
-    mv "$f" "$SPLITDIR/${SPLIT}.$n" &>/dev/null
-done
+# Randomize the target list (like Axiom)
+shuf "$FILE" > "$SPLITDIR/targets"
+
+# Split file using Axiom's algorithm
+first=1
+i=1
+while IFS= read -r worker_line; do
+  last=$((first+lines_per_file-1))
+  if [[ $i -le $extra_lines ]]; then
+    last=$((last+1))
+  fi
+  
+  # Extract lines for this worker
+  head -n $last "$SPLITDIR/targets" | tail -n $((last - first + 1)) > "$SPLITDIR/${SPLIT}.$i"
+  
+  first=$((last+1))
+  i=$((i+1))
+done <<< "$WORKER_CREDS_FILTERED"
+
+# Clean up temporary targets file
+rm -f "$SPLITDIR/targets"
 
 # Delete empty files
-find $SPLITDIR -type f -empty -delete
+find "$SPLITDIR" -type f -empty -delete
 
-
-# Send sshkey to Mini-Child-VPS
-KEY_PATH="$HOME/.ssh/id_ed25519.pub"
-# --- check & create key ---
-if [[ ! -f "$KEY_PATH" ]]; then
-  echo "No public key at $KEY_PATH — generating a new ed25519 key..."
-  ssh-keygen -t ed25519 -f "${HOME}/.ssh/id_ed25519" -N "" -q
-  echo "Key generated: $KEY_PATH"
+# Count actual split files
+ACTUAL_SPLIT_FILES=$(find "$SPLITDIR" -type f | wc -l)
+if [[ $ACTUAL_SPLIT_FILES -eq 0 ]]; then
+  echo "Error: No files were created after splitting"
+  exit 1
 fi
 
-export KEY_PATH
-parallel -a $HOME/worker.credentials --colsep ':' -j20 "
-  sshpass -p {2} ssh-copy-id -i $KEY_PATH -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {1} &>/dev/null
+echo "TOTAL: $LINES lines, Split into $ACTUAL_SPLIT_FILES files, Workers: $TOTALVPS"
 
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 {1} "mkdir -p $FLEETDIR" &>/dev/null
+# Send sshkey to workers
+KEY_PATH="$HOME/.ssh/id_ed25519"
+KEY_PATH_PUB="$HOME/.ssh/id_ed25519.pub"
 
-  echo "Sending file ${SPLIT}.{#} to {1}..."
-  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $SPLITDIR/${SPLIT}.{#} {1}:$FLEETDIR/${INPUT}
-
-  echo "Sending module file $HOME/.garudrecon/modules/${MODULE}.json to {1}..."
-  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $HOME/.garudrecon/modules/${MODULE}.json {1}:$HOME/.garudrecon/modules/${MODULE}.json
-"
-
-# Create a tmux session
-grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | parallel -j50 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {} "tmux new-session -d -s fleet"'
-
-# Run command in tmux session and send file to "main VPS"
-if $VERBOSE; then
-  grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | parallel -j50 "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {} \"tmux send-keys -t fleet \\\"garudrecon workflow ${MODULE} -i $FLEETDIR/${INPUT} -o $FLEETDIR/${OUTPUT} --verbose && scp -i ~/.ssh/id_rsa_vps $FLEETDIR/${OUTPUT} \\\$(shuf -n 1 $HOME/master.credentials | cut -d: -f1):$FLEET_MODULEDIR/${OUTPUT}_{} &>/dev/null && rm -rf fleet\\\" C-m\""
-else
-  grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | parallel -j50 "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {} \"tmux send-keys -t fleet \\\"garudrecon workflow ${MODULE} -i $FLEETDIR/${INPUT} -o $FLEETDIR/${OUTPUT} && scp -i ~/.ssh/id_rsa_vps $FLEETDIR/${OUTPUT} \\\$(shuf -n 1 $HOME/master.credentials | cut -d: -f1):$FLEET_MODULEDIR/${OUTPUT}_{} &>/dev/null && rm -rf fleet\\\" C-m\""
+# Check & create key for master->worker communication
+if [[ ! -f "$KEY_PATH_PUB" ]]; then
+  echo "No public key at $KEY_PATH_PUB — generating a new ed25519 key..."
+  ssh-keygen -t ed25519 -f "$KEY_PATH" -N "" -q
+  echo "Key generated: $KEY_PATH_PUB"
 fi
+
+export KEY_PATH_PUB
+
+# Note: Workers should have ~/.ssh/id_rsa_vps key set up during initial configuration
+# This is used for worker->master communication (scp results back)
+
+# Preflight check: Test SSH connectivity to all workers
+echo "[*] Preflight check: Testing SSH connectivity to workers..."
+WORKER_HOSTS=""
+FAILED_WORKERS=0
+
+while IFS= read -r worker_line; do
+  worker_host=$(echo "$worker_line" | cut -d: -f1)
+  worker_pass=$(echo "$worker_line" | cut -d: -f2)
+  
+  if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o PasswordAuthentication=no "$worker_host" "echo test" &>/dev/null; then
+    WORKER_HOSTS="${WORKER_HOSTS}${worker_host}"$'\n'
+    echo "  [OK] $worker_host"
+  else
+    # Try to setup key if not already done
+    sshpass -p "$worker_pass" ssh-copy-id -i "$KEY_PATH_PUB" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$worker_host" &>/dev/null || true
+    
+    # Test again
+    if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o PasswordAuthentication=no "$worker_host" "echo test" &>/dev/null; then
+      WORKER_HOSTS="${WORKER_HOSTS}${worker_host}"$'\n'
+      echo "  [OK] $worker_host (key setup successful)"
+    else
+      echo "  [FAIL] $worker_host (unreachable)"
+      FAILED_WORKERS=$((FAILED_WORKERS + 1))
+    fi
+  fi
+done <<< "$WORKER_CREDS_FILTERED"
+
+# Update worker list with only reachable hosts
+WORKER_HOSTS=$(echo "$WORKER_HOSTS" | grep -v '^$')
+TOTALVPS=$(echo "$WORKER_HOSTS" | wc -l)
+
+if [[ $TOTALVPS -eq 0 ]]; then
+  echo "Error: No reachable workers found after preflight check"
+  exit 1
+fi
+
+if [[ $FAILED_WORKERS -gt 0 ]]; then
+  echo "[!] Warning: $FAILED_WORKERS worker(s) failed preflight check and were excluded"
+fi
+
+# Setup workers: copy SSH keys, create directories, upload files
+echo "[*] Setting up workers..."
+i=1
+while IFS= read -r worker_host; do
+  [[ -z "$worker_host" ]] && continue
+  
+  split_file="$SPLITDIR/${SPLIT}.$i"
+  
+  if [[ -f "$split_file" ]]; then
+    # Setup directories and create log files
+    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "mkdir -p $FLEETDIR $HOME/.garudrecon/workflow && touch $FLEETDIR/stdout.log $FLEETDIR/stderr.log" &>/dev/null
+    
+    # Upload input file
+    scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$split_file" "${worker_host}:${FLEETDIR}/${INPUT}" &>/dev/null
+    
+    # Upload workflow file
+    scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOME/.garudrecon/workflow/${MODULE}.json" "${worker_host}:${HOME}/.garudrecon/workflow/${MODULE}.json" &>/dev/null
+    
+    echo "  [OK] Setup $worker_host"
+  fi
+  i=$((i+1))
+done <<< "$WORKER_HOSTS"
+
+# Create unique tmux sessions on each worker (kill existing if present)
+echo "[*] Creating tmux sessions on workers..."
+while IFS= read -r worker_host; do
+  [[ -z "$worker_host" ]] && continue
+  
+  # Kill existing session if it exists, then create new one
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "tmux kill-session -t $UID 2>/dev/null; tmux new-session -d -s $UID" &>/dev/null || true
+done <<< "$WORKER_HOSTS"
+
+# Run command in tmux session and send file to master VPS
+echo "[*] Starting scans on workers..."
+MASTER_HOST=$(echo "$MASTER_CREDS_FILTERED" | shuf -n 1 | cut -d: -f1)
+
+# Note: Workers should have ~/.ssh/id_rsa_vps key set up during initial configuration
+# This key should be authorized on the master VPS for passwordless scp
 
 DEST="$FLEETDIR/${OUTPUT}"
-TOTALVPS=$(grep -vE '^\s*$|^\s*#' $HOME/worker.credentials | cut -d: -f1 | wc -l)
+
+# Start background tail processes to stream remote logs (like Axiom)
+# This must be done BEFORE running commands so we don't miss early output
+echo "[*] Starting log streaming from workers..."
+while IFS= read -r worker_host; do
+  [[ -z "$worker_host" ]] && continue
+  
+  # Start tailing remote log files (like Axiom: tail -f stderr.log & tail -f stdout.log)
+  # The tail processes run in background on remote, output is redirected to local log file
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "cd $FLEETDIR && tail -f stderr.log & tail -f stdout.log" >> "$FLEET_MODULEDIR/logs/${worker_host}.log" 2>&1 &
+  remoteTailPIDs+=($!)
+done <<< "$WORKER_HOSTS"
+
+# Start local tail to display streaming output (like Axiom)
+# Wait a moment for log files to be created
+sleep 1
+if [[ -n "$(ls -A "$FLEET_MODULEDIR/logs"/*.log 2>/dev/null)" ]]; then
+  tail -f "$FLEET_MODULEDIR/logs"/*.log 2>/dev/null &
+  localTailPID=$!
+fi
+
+# Now run the commands on workers
+while IFS= read -r worker_host; do
+  [[ -z "$worker_host" ]] && continue
+  
+  # Build command with output redirection to log files (like Axiom)
+  if [[ "$VERBOSE" == "true" ]]; then
+    cmd="cd $FLEETDIR && garudrecon workflow ${MODULE} -i ${FLEETDIR}/${INPUT} -o ${FLEETDIR}/${OUTPUT} --verbose > >(tee -a stdout.log) 2> >(tee -a stderr.log >&2) && scp -i ~/.ssh/id_rsa_vps ${FLEETDIR}/${OUTPUT} ${MASTER_HOST}:${FLEET_MODULEDIR}/${OUTPUT}_${worker_host} &>/dev/null"
+  else
+    cmd="cd $FLEETDIR && garudrecon workflow ${MODULE} -i ${FLEETDIR}/${INPUT} -o ${FLEETDIR}/${OUTPUT} > >(tee -a stdout.log) 2> >(tee -a stderr.log >&2) && scp -i ~/.ssh/id_rsa_vps ${FLEETDIR}/${OUTPUT} ${MASTER_HOST}:${FLEET_MODULEDIR}/${OUTPUT}_${worker_host} &>/dev/null"
+  fi
+  
+  # Send command to tmux session
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "tmux send-keys -t $UID \"$cmd\" C-m" &>/dev/null || true
+done <<< "$WORKER_HOSTS"
 
 echo "[*] Waiting for results from $TOTALVPS VPS..."
 
-while true; do
-    DONE=$(find "$FLEETDIR" -maxdepth 1 -type f -name "${OUTPUT}_*" | wc -l)
-
-    # Calculate percentage
-    PERCENT=$(( 100 * DONE / TOTALVPS ))
-
-    # Build simple progress bar (50 chars wide)
+# Background downloader function (like Axiom)
+downloader() {
+  while true; do
+    sleep 5
+    
+    # Check for completion files on master
+    DONE=$(find "$FLEET_MODULEDIR" -maxdepth 1 -type f -name "${OUTPUT}_*" 2>/dev/null | wc -l)
+    
+    # Calculate percentage (with division by zero protection)
+    if [[ $TOTALVPS -gt 0 ]]; then
+      PERCENT=$(( 100 * DONE / TOTALVPS ))
+    else
+      PERCENT=0
+    fi
+    
+    # Build progress bar (50 chars wide)
     BAR_WIDTH=50
     FILLED=$(( PERCENT * BAR_WIDTH / 100 ))
     EMPTY=$(( BAR_WIDTH - FILLED ))
     BAR=$(printf "%${FILLED}s" | tr ' ' '#')
     SPACE=$(printf "%${EMPTY}s")
-
+    
     echo -ne "\rProgress: [$BAR$SPACE] $DONE / $TOTALVPS VPS ($PERCENT%)"
-
+    
     if [[ $DONE -ge $TOTALVPS ]]; then
-        echo -e "\n[*] All VPS finished, merging..."
-        # deduplicated and merge in 1 file
-        cat "$FLEETDIR"/${OUTPUT}_* | unew -q "$DEST"
-        # rm -f "$FLEETDIR"/${OUTPUT}_*
-        rm -rf $SPLITDIR
-        echo "[+] Deduplicated results saved to $DEST"
-        break
+      break
     fi
+  done
+}
 
-    sleep 5
+# Run downloader in background
+downloader &
+downloaderPID=$!
+
+# Wait for downloader
+wait $downloaderPID 2>/dev/null
+
+# Kill tail processes after downloader finishes
+if [[ -n "$localTailPID" ]]; then
+  kill -0 "$localTailPID" 2>/dev/null && kill -9 "$localTailPID" &>/dev/null || true
+fi
+
+for pid in "${remoteTailPIDs[@]}"; do
+  if [[ -n "$pid" ]]; then
+    kill -0 "$pid" 2>/dev/null && kill -9 "$pid" &>/dev/null || true
+  fi
 done
+
+echo -e "\n[*] All VPS finished, merging..."
+
+# Deduplicate and merge results
+if [[ -f "$DEST" ]]; then
+  rm -f "$DEST"
+fi
+
+# Merge all output files
+if find "$FLEET_MODULEDIR" -maxdepth 1 -type f -name "${OUTPUT}_*" 2>/dev/null | head -n1 | read; then
+  cat "$FLEET_MODULEDIR"/${OUTPUT}_* 2>/dev/null | unew -q "$DEST"
+  echo "[+] Deduplicated results saved to $DEST"
+else
+  echo "[!] Warning: No output files found to merge"
+  touch "$DEST"
+fi
+
+# Cleanup
+rm -rf "$SPLITDIR"
+
+# Kill tmux sessions on workers
+echo "[*] Cleaning up worker sessions..."
+while IFS= read -r worker_host; do
+  [[ -z "$worker_host" ]] && continue
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "tmux kill-session -t $UID 2>/dev/null" &>/dev/null || true
+done <<< "$WORKER_HOSTS"
+
+# Final cleanup of tail processes
+if [[ -n "$localTailPID" ]]; then
+  kill -0 "$localTailPID" 2>/dev/null && kill -9 "$localTailPID" &>/dev/null || true
+fi
+
+for pid in "${remoteTailPIDs[@]}"; do
+  if [[ -n "$pid" ]]; then
+    kill -0 "$pid" 2>/dev/null && kill -9 "$pid" &>/dev/null || true
+  fi
+done
+
+# Restore terminal
+stty sane
+tput init 2>/dev/null || true
+
+echo "[+] Fleet scan completed!"

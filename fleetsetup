@@ -1,0 +1,338 @@
+#!/bin/bash
+
+# Define colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Help function
+function show_help() {
+  cat <<EOF
+Automate GarudRecon installation and SSH key setup on all worker VPS instances.
+
+Usage:
+  fleetsetup [options]
+
+Options:
+  --skip-install    Skip GarudRecon installation (only setup SSH keys)
+  --skip-keys       Skip SSH key setup (only install GarudRecon)
+  --test-only       Only test connectivity (skip installation and key setup)
+  -h, --help        Show this help message
+
+The script reads configuration from ~/.garudrecon/fleet.yaml
+
+Example fleet.yaml format:
+  worker:
+    - root@192.168.1.10:PASSWORD1
+    - root@192.168.1.11:PASSWORD2
+  master:
+    - root@192.168.1.1:MASTER_PASSWORD
+EOF
+}
+
+# Parse arguments
+SKIP_INSTALL=false
+SKIP_KEYS=false
+TEST_ONLY=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --skip-install)
+      SKIP_INSTALL=true
+      shift
+      ;;
+    --skip-keys)
+      SKIP_KEYS=true
+      shift
+      ;;
+    --test-only)
+      TEST_ONLY=true
+      shift
+      ;;
+    -h|--help)
+      show_help
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      show_help
+      exit 1
+      ;;
+  esac
+done
+
+# Validate fleet.yaml exists
+FLEET_YAML="$HOME/.garudrecon/fleet.yaml"
+if [[ ! -f "$FLEET_YAML" ]]; then
+  echo -e "${RED}Error:${NC} fleet.yaml file not found at $FLEET_YAML"
+  echo -e "${YELLOW}Please create the file with worker and master credentials.${NC}"
+  echo -e "${CYAN}Example format:${NC}"
+  echo "  worker:"
+  echo "    - root@IP1:PASSWORD1"
+  echo "    - root@IP2:PASSWORD2"
+  echo "  master:"
+  echo "    - root@IP:MASTER_PASSWORD"
+  exit 1
+fi
+
+# Check if sshpass is available
+if ! command -v sshpass &>/dev/null; then
+  echo -e "${YELLOW}[*] sshpass not found, installing...${NC}"
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get update -qq &>/dev/null
+    sudo apt-get install -y sshpass &>/dev/null
+  elif command -v yum &>/dev/null; then
+    sudo yum install -y sshpass &>/dev/null
+  else
+    echo -e "${RED}Error:${NC} sshpass is required but cannot be installed automatically."
+    echo "Please install it manually: apt-get install sshpass"
+    exit 1
+  fi
+fi
+
+# Check if yq is available, install if missing
+if ! command -v yq &>/dev/null; then
+  echo -e "${YELLOW}[*] yq not found, installing...${NC}"
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get update -qq &>/dev/null
+    sudo apt-get install -y yq &>/dev/null || {
+      if command -v go &>/dev/null; then
+        go install github.com/mikefarah/yq/v4@latest &>/dev/null
+        export PATH="$PATH:$HOME/go/bin"
+      else
+        echo -e "${RED}Error:${NC} Cannot install yq. Please install it manually."
+        exit 1
+      fi
+    }
+  elif command -v yum &>/dev/null; then
+    sudo yum install -y yq &>/dev/null || {
+      if command -v go &>/dev/null; then
+        go install github.com/mikefarah/yq/v4@latest &>/dev/null
+        export PATH="$PATH:$HOME/go/bin"
+      else
+        echo -e "${RED}Error:${NC} Cannot install yq. Please install it manually."
+        exit 1
+      fi
+    }
+  elif command -v go &>/dev/null; then
+    go install github.com/mikefarah/yq/v4@latest &>/dev/null
+    export PATH="$PATH:$HOME/go/bin"
+  else
+    echo -e "${RED}Error:${NC} yq is required but not installed. Please install it:"
+    echo "  apt-get install yq"
+    echo "  OR"
+    echo "  go install github.com/mikefarah/yq/v4@latest"
+    exit 1
+  fi
+  
+  if ! command -v yq &>/dev/null; then
+    echo -e "${RED}Error:${NC} yq installation failed. Please install manually."
+    exit 1
+  fi
+  echo -e "${GREEN}[+]${NC} yq installed successfully"
+fi
+
+# Parse YAML configuration
+parse_fleet_yaml() {
+  local yaml_file="$1"
+  
+  # Validate YAML structure
+  if ! yq eval '.worker' "$yaml_file" &>/dev/null; then
+    echo -e "${RED}Error:${NC} Missing 'worker' section in fleet.yaml"
+    exit 1
+  fi
+  
+  if ! yq eval '.master' "$yaml_file" &>/dev/null; then
+    echo -e "${RED}Error:${NC} Missing 'master' section in fleet.yaml"
+    exit 1
+  fi
+  
+  # Extract worker credentials (filter out null/empty values)
+  WORKER_CREDS=$(yq eval '.worker[]' "$yaml_file" 2>/dev/null | grep -v '^null$' | grep -v '^$' | grep -v '^\s*$')
+  
+  # Extract master credentials (filter out null/empty values)
+  MASTER_CREDS=$(yq eval '.master[]' "$yaml_file" 2>/dev/null | grep -v '^null$' | grep -v '^$' | grep -v '^\s*$')
+  
+  # Validate we have workers
+  if [[ -z "$WORKER_CREDS" ]]; then
+    echo -e "${RED}Error:${NC} No valid workers found in fleet.yaml"
+    exit 1
+  fi
+  
+  # Validate we have master
+  if [[ -z "$MASTER_CREDS" ]]; then
+    echo -e "${RED}Error:${NC} No valid master found in fleet.yaml"
+    exit 1
+  fi
+}
+
+# Parse the fleet.yaml file
+parse_fleet_yaml "$FLEET_YAML"
+
+# Get master host (use first master)
+MASTER_HOST=$(echo "$MASTER_CREDS" | head -n1 | cut -d: -f1)
+MASTER_PASS=$(echo "$MASTER_CREDS" | head -n1 | cut -d: -f2)
+
+# Ensure master has .ssh directory
+mkdir -p "$HOME/.ssh"
+chmod 700 "$HOME/.ssh"
+if [[ ! -f "$HOME/.ssh/authorized_keys" ]]; then
+  touch "$HOME/.ssh/authorized_keys"
+  chmod 600 "$HOME/.ssh/authorized_keys"
+fi
+
+# Count workers
+TOTAL_WORKERS=$(echo "$WORKER_CREDS" | wc -l)
+SUCCESS_COUNT=0
+FAILED_COUNT=0
+FAILED_WORKERS=()
+
+echo -e "\n${BOLD}${CYAN}==> Fleet Setup${NC}"
+echo -e "${YELLOW}Total workers:${NC} ${GREEN}$TOTAL_WORKERS${NC}"
+echo -e "${YELLOW}Master host:${NC} ${GREEN}$MASTER_HOST${NC}\n"
+
+# Process each worker
+worker_num=0
+while IFS= read -r worker_line; do
+  [[ -z "$worker_line" ]] && continue
+  
+  worker_num=$((worker_num + 1))
+  worker_host=$(echo "$worker_line" | cut -d: -f1)
+  worker_pass=$(echo "$worker_line" | cut -d: -f2)
+  
+  echo -e "${BOLD}[$worker_num/$TOTAL_WORKERS]${NC} Processing ${CYAN}$worker_host${NC}..."
+  
+  # Test connectivity first
+  if ! sshpass -p "$worker_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "echo test" &>/dev/null; then
+    echo -e "  ${RED}[FAIL]${NC} Cannot connect to $worker_host"
+    FAILED_COUNT=$((FAILED_COUNT + 1))
+    FAILED_WORKERS+=("$worker_host")
+    continue
+  fi
+  
+  # Install GarudRecon on worker
+  if [[ "$TEST_ONLY" != "true" && "$SKIP_INSTALL" != "true" ]]; then
+    echo -e "  ${YELLOW}[*]${NC} Installing GarudRecon..."
+    if sshpass -p "$worker_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure)" &>/dev/null; then
+      echo -e "  ${GREEN}[+]${NC} GarudRecon installation completed"
+    else
+      echo -e "  ${YELLOW}[~]${NC} GarudRecon installation may have issues (check manually)"
+    fi
+  fi
+  
+  # Setup SSH keys
+  if [[ "$TEST_ONLY" != "true" && "$SKIP_KEYS" != "true" ]]; then
+    echo -e "  ${YELLOW}[*]${NC} Setting up SSH keys..."
+    
+    # Generate id_rsa_vps key on worker if not exists
+    sshpass -p "$worker_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "
+      mkdir -p ~/.ssh
+      chmod 700 ~/.ssh
+      if [[ ! -f ~/.ssh/id_rsa_vps ]]; then
+        ssh-keygen -t rsa -f ~/.ssh/id_rsa_vps -N '' -q
+        chmod 600 ~/.ssh/id_rsa_vps
+        chmod 644 ~/.ssh/id_rsa_vps.pub
+      fi
+    " &>/dev/null
+    
+    # Get worker's public key and add to master's authorized_keys
+    WORKER_PUBKEY=$(sshpass -p "$worker_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "cat ~/.ssh/id_rsa_vps.pub" 2>/dev/null)
+    
+    if [[ -n "$WORKER_PUBKEY" ]]; then
+      # Check if key already exists in authorized_keys
+      if ! grep -Fxq "$WORKER_PUBKEY" "$HOME/.ssh/authorized_keys" 2>/dev/null; then
+        echo "$WORKER_PUBKEY" >> "$HOME/.ssh/authorized_keys"
+        chmod 600 "$HOME/.ssh/authorized_keys"
+        echo -e "  ${GREEN}[+]${NC} Worker's public key added to master"
+      else
+        echo -e "  ${GREEN}[+]${NC} Worker's public key already exists on master"
+      fi
+    else
+      echo -e "  ${YELLOW}[~]${NC} Could not retrieve worker's public key"
+    fi
+    
+    # Also setup master's key on worker for master->worker communication
+    if [[ ! -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+      ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N "" -q &>/dev/null
+    fi
+    
+    MASTER_PUBKEY=$(cat "$HOME/.ssh/id_ed25519.pub" 2>/dev/null)
+    if [[ -n "$MASTER_PUBKEY" ]]; then
+      sshpass -p "$worker_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        if [[ ! -f ~/.ssh/authorized_keys ]]; then
+          touch ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+        fi
+        if ! grep -Fxq '$MASTER_PUBKEY' ~/.ssh/authorized_keys 2>/dev/null; then
+          echo '$MASTER_PUBKEY' >> ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+        fi
+      " &>/dev/null
+      echo -e "  ${GREEN}[+]${NC} Master's public key added to worker"
+    fi
+  fi
+  
+  # Test connectivity
+  echo -e "  ${YELLOW}[*]${NC} Testing connectivity..."
+  
+  # Test master->worker (passwordless)
+  if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o PasswordAuthentication=no "$worker_host" "echo master-to-worker" &>/dev/null; then
+    echo -e "  ${GREEN}[+]${NC} Master->Worker: OK"
+    MASTER_TO_WORKER_OK=true
+  else
+    echo -e "  ${YELLOW}[~]${NC} Master->Worker: Passwordless SSH not working (may need manual setup)"
+    MASTER_TO_WORKER_OK=false
+  fi
+  
+  # Test worker->master (passwordless) - need to test from worker side
+  if sshpass -p "$worker_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "$worker_host" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i ~/.ssh/id_rsa_vps -o PasswordAuthentication=no $MASTER_HOST 'echo worker-to-master' 2>/dev/null" &>/dev/null; then
+    echo -e "  ${GREEN}[+]${NC} Worker->Master: OK"
+    WORKER_TO_MASTER_OK=true
+  else
+    echo -e "  ${YELLOW}[~]${NC} Worker->Master: Passwordless SSH not working (may need manual setup)"
+    WORKER_TO_MASTER_OK=false
+  fi
+  
+  if [[ "$MASTER_TO_WORKER_OK" == "true" && "$WORKER_TO_MASTER_OK" == "true" ]]; then
+    echo -e "  ${GREEN}[+]${NC} ${CYAN}$worker_host${NC} setup completed successfully"
+    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+  elif [[ "$TEST_ONLY" == "true" ]]; then
+    if [[ "$MASTER_TO_WORKER_OK" == "true" && "$WORKER_TO_MASTER_OK" == "true" ]]; then
+      SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+    else
+      FAILED_COUNT=$((FAILED_COUNT + 1))
+      FAILED_WORKERS+=("$worker_host")
+    fi
+  else
+    echo -e "  ${YELLOW}[~]${NC} ${CYAN}$worker_host${NC} setup completed with warnings"
+    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+  fi
+  
+  echo ""
+done <<< "$WORKER_CREDS"
+
+# Summary
+echo -e "${BOLD}${CYAN}==> Setup Summary${NC}"
+echo -e "${GREEN}Successful:${NC} $SUCCESS_COUNT / $TOTAL_WORKERS"
+if [[ $FAILED_COUNT -gt 0 ]]; then
+  echo -e "${RED}Failed:${NC} $FAILED_COUNT / $TOTAL_WORKERS"
+  echo -e "${RED}Failed workers:${NC}"
+  for failed in "${FAILED_WORKERS[@]}"; do
+    echo -e "  - ${RED}$failed${NC}"
+  done
+fi
+
+if [[ $SUCCESS_COUNT -eq $TOTAL_WORKERS ]]; then
+  echo -e "\n${GREEN}[+]${NC} All workers configured successfully!"
+  exit 0
+else
+  echo -e "\n${YELLOW}[!]${NC} Some workers failed. Please check manually."
+  exit 1
+fi
+

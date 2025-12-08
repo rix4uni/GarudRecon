@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODULES_DIR="modules"
+MODULES_DIR="workflow"
 TOOL="$1"
 shift
 
@@ -19,17 +19,17 @@ Flags:
   -i, --input       Pass the input
   -o, --output      Location where you want to save output
   -v, --verbose     enable verbose mode
-  -h, --help        help for modules
+  -h, --help        help for workflow
 
 Example:
   garudrecon workflow amass --input <domain> --output <file> [--verbose]
   garudrecon workflow CVE-2025-0133 -i all.cidr -o CVE-2025-0133.nuclei
   garudrecon workflow ls
-  garudrecon workflow ls [module]
-  garudrecon workflow cat [module]
-  garudrecon workflow add [module]
-  garudrecon workflow edit [module]
-  garudrecon workflow delete [module]
+  garudrecon workflow ls [workflow]
+  garudrecon workflow cat [workflow]
+  garudrecon workflow add [workflow]
+  garudrecon workflow edit [workflow]
+  garudrecon workflow delete [workflow]
 EOF
 }
 
@@ -38,7 +38,7 @@ print_table() {
 
   # collect rows
   rows=()
-  rows+=("MODULES|USAGE EXAMPLES|DESCRIPTION")
+  rows+=("WORKFLOWS|USAGE EXAMPLES|DESCRIPTION")
 
   for module in "${modules[@]}"; do
     example=$(jq -r '.[0].example' "$MODULES_DIR/$module")
@@ -66,15 +66,15 @@ print_table() {
 
 if [[ "$TOOL" == "ls" ]]; then
   if [[ -n "$1" ]]; then
-    # list single module
+    # list single workflow
     if [[ -f "$MODULES_DIR/$1.json" ]]; then
       print_table "$1.json"
     else
-      echo "Module '$1' not found."
+      echo "Workflow '$1' not found."
       exit 1
     fi
   else
-    # list all modules
+    # list all workflows
     modules=($(ls "$MODULES_DIR"/*.json | xargs -n1 basename))
     print_table "${modules[@]}"
   fi
@@ -88,11 +88,11 @@ if [[ "$TOOL" == "cat" ]]; then
     if [[ -f "$MODULE_FILE" ]]; then
       cat "$MODULE_FILE"
     else
-      echo "Module '$MODULE_FILE' not found."
+      echo "Workflow '$MODULE_FILE' not found."
       exit 1
     fi
   else
-    echo "No module name provided."
+    echo "No workflow name provided."
     exit 1
   fi
   exit 0
@@ -103,11 +103,11 @@ if [[ "$TOOL" == "add" ]]; then
   if [[ -n "$1" ]]; then
     MODULE_FILE="$MODULES_DIR/$1.json"
 
-    # create modules dir if it doesn't exist
+    # create workflow dir if it doesn't exist
     mkdir -p "$MODULES_DIR"
 
     if [[ -f "$MODULE_FILE" ]]; then
-      echo "Module '$MODULE_FILE' already exists."
+      echo "Workflow '$MODULE_FILE' already exists."
     else
       # create a new json file with basic structure
       cat > "$MODULE_FILE" <<EOF
@@ -122,10 +122,10 @@ if [[ "$TOOL" == "add" ]]; then
   "description": ""
 }]
 EOF
-      echo "Created new module: $MODULE_FILE"
+      echo "Created new workflow: $MODULE_FILE"
     fi
   else
-    echo "No module name provided."
+    echo "No workflow name provided."
     exit 1
   fi
   exit 0
@@ -135,18 +135,18 @@ if [[ "$TOOL" == "edit" ]]; then
   if [[ -n "$1" ]]; then
     MODULE_FILE="$MODULES_DIR/$1.json"
 
-    # create modules dir if missing
+    # create workflow dir if missing
     mkdir -p "$MODULES_DIR"
 
     # if file doesn't exist, create an empty json
     if [[ ! -f "$MODULE_FILE" ]]; then
-      echo "Module '$MODULE_FILE' not found."
+      echo "Workflow '$MODULE_FILE' not found."
     fi
 
     # open in nano
     nano "$MODULE_FILE"
   else
-    echo "No module name provided."
+    echo "No workflow name provided."
     exit 1
   fi
   exit 0
@@ -158,20 +158,20 @@ if [[ "$TOOL" == "delete" ]]; then
 
     if [[ -f "$MODULE_FILE" ]]; then
       rm -rf "$MODULE_FILE"
-      echo "Module '$MODULE_FILE' deleted."
+      echo "Workflow '$MODULE_FILE' deleted."
     else
-      echo "Module '$MODULE_FILE' not found."
+      echo "Workflow '$MODULE_FILE' not found."
       exit 1
     fi
   else
-    echo "No module name provided."
+    echo "No workflow name provided."
     exit 1
   fi
   exit 0
 fi
 
 
-# --- normal module execution ---
+# --- normal workflow execution ---
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in

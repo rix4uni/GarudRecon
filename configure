@@ -7,13 +7,18 @@ mkdir -p "$HOME/.garudrecon"
 find $HOME/.garudrecon -mindepth 1 -maxdepth 1 ! -name scans ! -name cronjobscan -exec rm -rf {} +
 
 # send important files
-mv cmd/ configuration/ modules/ $HOME/.garudrecon
+mv cmd/ configuration/ workflow/ $HOME/.garudrecon
 
 # make it garudrecon globally
 mv garudrecon /usr/bin/
 
 # make it excutble
 chmod +x $HOME/.garudrecon/cmd/* /usr/bin/garudrecon
+# make fleetsetup executable if it exists
+if [[ -f "fleetsetup" ]]; then
+    chmod +x fleetsetup
+    mv fleetsetup /usr/bin/ 2>/dev/null || cp fleetsetup /usr/bin/ 2>/dev/null || true
+fi
 
 # Get total RAM in GB (for display purposes only)
 # Try dmidecode first
@@ -38,7 +43,7 @@ sed -i -e 's|mkdir -p wordlists|mkdir -p $HOME/.garudrecon/wordlists|' -e 's|mkd
 sed -i -e 's|cp -r ~/nuclei-templates/http/takeovers templates/takeovers|cp -r ~/nuclei-templates/http/takeovers $HOME/.garudrecon/templates/takeovers|' $HOME/.garudrecon/cmd/install
 sed -i -e 's|templates/takeovers/\*\.yaml|$HOME/.garudrecon/templates/takeovers/*.yaml|' $HOME/.garudrecon/cmd/install
 sed -i -e 's|WORDLIST_BASEDIR="wordlists"|WORDLIST_BASEDIR="$HOME/.garudrecon/wordlists"|' $HOME/.garudrecon/configuration/$CONFIG
-sed -i -e 's|MODULES_DIR="modules"|MODULES_DIR="$HOME/.garudrecon/modules"|' $HOME/.garudrecon/cmd/workflow
+sed -i -e 's|MODULES_DIR="workflow"|MODULES_DIR="$HOME/.garudrecon/workflow"|' $HOME/.garudrecon/cmd/workflow
 
 # Run the installation command - always install ALL tools
 garudrecon install -f ALL

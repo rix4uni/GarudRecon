@@ -60,7 +60,7 @@ The framework provides three distinct operational modes tailored to different en
 - **LargeScope Mode** - Organization-wide reconnaissance for maximum asset discovery and extensive vulnerability coverage.
 - **CidrScope Mode** - ⚠️ Coming Soon - CIDR-based reconnaissance for IP range scanning
 - **Workflow Mode** - Chain multiple tools into a reusable pipeline so you can run complex scans with a single command.
-- **Fleet Mode** - Distribute work across many VPS instances — split input automatically and run modules in parallel on 100+ hosts.
+- **Fleet Mode** - Distribute work across many VPS instances — split input automatically and run workflows in parallel on 100+ hosts.
 - **CronJobs Mode** - Schedule and monitor recurring recon tasks (subdomains, open ports, JS leaks, templates, alerts).
 
 ### Advanced Features
@@ -145,7 +145,13 @@ Before installing GarudRecon, ensure you have:
 ### Docker
 > **Note:** Docker support is coming soon. For now, please use the Git Clone or prebuilt binaries installation method.
 
-### Using Git Clone (Recommended)
+### Quick Install (No Clone Required)
+```
+# Install directly via curl (recommended for quick setup)
+bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure)
+```
+
+### Using Git Clone
 ```
 git clone --depth 1 https://github.com/rix4uni/GarudRecon.git
 cd GarudRecon
@@ -404,25 +410,25 @@ Flags:
   -i, --input       Pass the input
   -o, --output      Location where you want to save output
   -v, --verbose     enable verbose mode
-  -h, --help        help for modules
+  -h, --help        help for workflows
 
 Example:
   garudrecon workflow amass --input <domain> --output <file> [--verbose]
   garudrecon workflow CVE-2025-0133 -i all.cidr -o CVE-2025-0133.nuclei
   garudrecon workflow ls
-  garudrecon workflow ls [module]
-  garudrecon workflow cat [module]
-  garudrecon workflow add [module]
-  garudrecon workflow edit [module]
-  garudrecon workflow delete [module]
+  garudrecon workflow ls [workflow]
+  garudrecon workflow cat [workflow]
+  garudrecon workflow add [workflow]
+  garudrecon workflow edit [workflow]
+  garudrecon workflow delete [workflow]
 ```
 
-### Validating Workflow Modules
+### Validating Workflows
 
-To check if all workflow module JSON files are valid:
+To check if all workflow JSON files are valid:
 
 ```bash
-for f in modules/*.json; do
+for f in workflow/*.json; do
   echo -n "Checking $f ... "
   jq empty "$f" && echo "✅ OK" || echo "❌ INVALID"
 done
@@ -438,35 +444,61 @@ done
 <details open>
   <summary><b>Fleet Mode</b></summary>
 
-> **Note:** This is a temporary setup. Progress bar and enhanced monitoring features will be added in the next update.
+> **Note:** Progress bar and enhanced monitoring features are included. Use `fleetsetup` to automate worker configuration.
+
+### Setup
+
+1. **Create fleet.yaml configuration file:**
+
 ```yaml
-## Add passwords like this to avoid single/double quotes problem, you can use https://codepen.io/rix4uni/pen/PwZzdpV
-4fd6dbe0Haafa1d7bf4df9f96597e48p
-
-## Save credentials in master.credentials and worker.credentials, in this format:
-## touch master.credentials worker.credentials
-## nano master.credentials
-## nano worker.credentials
-root@IP:PASSWORD
-root@IP:PASSWORD
-
-# Run both commands one by one on master vps
-bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure) 5
-bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure) 6
-
-## Wait for 15-20 minutes then check 1 worker if there is no tmux session that means fleet setup is done all workers, now run this command
-
-# Check is everything working fine
-## nano subs.txt
-krazeplanet.com
-labs.krazeplanet.com
-
-garudrecon fleet -m workerscheck -i subs.txt -o subs.output --verbose
+# Create the configuration file
+mkdir -p ~/.garudrecon
+nano ~/.garudrecon/fleet.yaml
 ```
 
+Add your credentials in YAML format:
 ```yaml
-Distribute work across many VPS instances — split input automatically and run modules in parallel on 100+ hosts.
-Use one command to shard data, push jobs to remote nodes, run the chosen module, and collect consolidated results. Perfect for massively-parallel scans.
+worker:
+  - root@192.168.1.10:PASSWORD1
+  - root@192.168.1.11:PASSWORD2
+  - root@192.168.1.12:PASSWORD3
+master:
+  - root@192.168.1.1:MASTER_PASSWORD
+```
+
+> **Note:** To avoid single/double quotes problems with passwords, you can use the [password encoder](https://codepen.io/rix4uni/pen/PwZzdpV)
+
+2. **Setup in master VPS:**
+
+Run this command directly on your master VPS (no need to clone the repo):
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/configure)
+```
+
+3. **Setup in workers (run this in master VPS):**
+
+After master setup is complete, run this command on the master VPS to automatically configure all workers. The `fleetsetup` script will:
+- Install GarudRecon on all worker VPS instances
+- Set up SSH keys for passwordless communication
+- Test connectivity between master and workers
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/rix4uni/GarudRecon/main/fleetsetup)
+```
+
+> **Note:** Both `configure` and `fleetsetup` can be run directly via curl without cloning the repository.
+
+Options:
+- `--skip-install` - Skip GarudRecon installation (only setup SSH keys)
+- `--skip-keys` - Skip SSH key setup (only install GarudRecon)
+- `--test-only` - Only test connectivity (skip installation and key setup)
+
+### Usage
+
+```yaml
+Distribute work across many VPS instances — split input automatically and run workflows in parallel on 100+ hosts.
+Use one command to shard data, push jobs to remote nodes, run the chosen workflow, and collect consolidated results. Perfect for massively-parallel scans.
 
 Usage:
   garudrecon fleet [flags]
@@ -474,12 +506,27 @@ Usage:
 Flags:
   -i, --input       Pass the input
   -o, --output      Location where you want to save output
-  -m, --module      module name you want to run
-  -h, --help        help for modules
+  -m, --module      workflow name you want to run
+  -v, --verbose     enable verbose mode
+  -h, --help        help for workflows
 
 Example:
-  garudrecon fleet -m <module> -i <wildcards> -o <file>
+  garudrecon fleet -m <workflow> -i <wildcards> -o <file> [--verbose]
+  garudrecon fleet -m httpx -i subs.txt -o subs.httpx --verbose
   garudrecon fleet -m subfinder -i wildcards.txt -o wildcards.subs
+```
+
+### Testing
+
+After setup, test with a simple scan:
+
+```bash
+# Create test input file
+echo "example.com" > subs.txt
+echo "test.example.com" >> subs.txt
+
+# Run fleet test
+garudrecon fleet -m httpx -i subs.txt -o subs.httpx --verbose
 ```
 
 </details>
