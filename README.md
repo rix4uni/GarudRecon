@@ -92,7 +92,7 @@ Before installing GarudRecon, ensure you have:
 
 ## Referral Links
 
-<details>
+<details open>
   <summary><b>Click to view cloud provider referral links</b></summary>
 
 <p align="center">
