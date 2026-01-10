@@ -1606,7 +1606,7 @@ OPEN_REDIRECT(){
 DOTGIT(){
 	START_SPINNER "${BGREEN}DOTGIT${RESET}"
 
-	cat ${SUBDOMAINDIR}/alivesubs.txt | redirectfinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -t -q ${ROOT_VULNDIR}/dotgit.txt
+	cat ${SUBDOMAINDIR}/alivesubs.txt | dotgitfinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -t -q ${ROOT_VULNDIR}/dotgit.txt
 
 	STOP_SPINNER
 	echo -e "${BGREEN}[+] DOTGIT${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/dotgit.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
@@ -1664,16 +1664,10 @@ SWAGGERUI(){
 	START_SPINNER "${BGREEN}SWAGGERUI${RESET}"
 
 	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | grep -aE "Swagger UI" | awk '{print $1}' | unew -el -t -q ${VULNDIR}/swaggerui.txt
-	cat ${VULNDIR}/swaggerui.txt | nuclei -duc -silent -nc -t templates/swagger-ui-xss.yaml | sed -e 's/^\[swagger-ui-xss\] \[http\] \[medium\] //' -e 's/ \[ENDPOINT=.*$//' | unew -el -t -q ${VULNDIR}/swaggerui_nuclei.txt
+	cat ${VULNDIR}/swaggerui.txt | goswagger --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -t -q ${ROOT_VULNDIR}/swaggerui.txt
 
 	# False Positive Checking
-	cat ${VULNDIR}/swaggerui_nuclei.txt | pyxss --silent --no-color -o ${VULNDIR}/swaggerui_xss.txt
-
-	# Check if the file has more than 0 lines
-	if [ -f "${VULNDIR}/swaggerui_xss.txt" ] && [ $(wc -l < "${VULNDIR}/swaggerui_xss.txt") -gt 0 ]; then
-		cat ${VULNDIR}/swaggerui_xss.txt | egrep -av "NOT VULNERABLE:" | unew -el -t -q ${VULNDIR}/swaggerui_xss.txt
-	    cp "${VULNDIR}/swaggerui_xss.txt" "${ROOT_VULNDIR}/swaggerui_xss.txt"
-	fi
+	cat ${ROOT_VULNDIR}/swaggerui.txt | pyxss --silent --no-color -o ${ROOT_VULNDIR}/swaggerui_xss.txt
 
 	STOP_SPINNER
 	echo -e "${BGREEN}[+] SWAGGERUI${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/swaggerui_xss.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
