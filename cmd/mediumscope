@@ -531,7 +531,7 @@ GITHUB_SUBDOMAINS(){
 BBOT(){
 	START_SPINNER "${BGREEN}BBOT${RESET}"
 
-	bbot --silent -t ${TARGET} -f subdomain-enum -rf passive -n bbot_scan -o $SUBDOMAINDIR -y
+	bbot --silent -t ${TARGET} -f subdomain-enum -rf passive -n bbot_scan -o $SUBDOMAINDIR -y &>/dev/null
 	cat ${SUBDOMAINDIR}/bbot_scan/subdomains.txt | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/bbot.subs
 
 	STOP_SPINNER
