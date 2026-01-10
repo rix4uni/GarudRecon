@@ -4,6 +4,7 @@
 CONFIG_PATH="configuration/garudrecon.cfg"
 
 TARGET=""
+DOMAINS_LIST_FILE=""
 
 EXCLUDE_FUNCS=()
 RECON_SUBDOMAIN=false
@@ -31,6 +32,7 @@ Usage:
 
 Flags:
   -d, --domain				Scan a domain (e.g. domain.com)
+  -dL, --domains-list			Scan multiple domains from a file (e.g. targets.txt)
   -ef, --exclude-functions		Exclude a function from running (e.g. AMASS)
   -s, --recon-subdomain			Run Subdomain Enumeration only
   -a, --active				Run Active Subdomain Enumeration also (e.g. puredns, altdns)
@@ -50,8 +52,11 @@ Example:
 # Full recon with all vulnerability scan
   garudrecon mediumscope -d domain.com
 
+# Scan multiple domains from a file
+  garudrecon mediumscope -dL targets.txt
+
 # Recon Subdomain Enumeration only
-  garudrecon mediumscope -d domain.com -s
+garudrecon mediumscope -d domain.com -s
 
 # Run Active Subdomain Enumeration also (e.g. puredns, altdns)
   garudrecon mediumscope -d domain.com -s -a
@@ -88,6 +93,10 @@ while [[ "$#" -gt 0 ]]; do
     case "$1" in
         -d|--domain)
             TARGET="$2"
+            shift 2
+            ;;
+        -dL|--domains-list)
+            DOMAINS_LIST_FILE="$2"
             shift 2
             ;;
         -ef|--exclude-functions)
@@ -168,11 +177,36 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-# Escape dots in domain for regex
-ESCAPED_TARGET=$(echo "$TARGET" | sed 's/\./\\./g')
+# Validate that both -d and -dL are not used together
+if [[ -n "$TARGET" && -n "$DOMAINS_LIST_FILE" ]]; then
+    echo "Error: Cannot use both -d and -dL flags together. Use either -d <domain> or -dL <file>"
+    exit 1
+fi
 
-if [[ -z "$TARGET" && "$RESUME_MODE" == false ]]; then
-    echo "Error: Target domain is required. Use -d <domain>"
+# Validate domains list file if -dL is used
+if [[ -n "$DOMAINS_LIST_FILE" ]]; then
+    if [[ ! -f "$DOMAINS_LIST_FILE" ]]; then
+        echo "Error: Domains list file '$DOMAINS_LIST_FILE' does not exist"
+        exit 1
+    fi
+    if [[ ! -r "$DOMAINS_LIST_FILE" ]]; then
+        echo "Error: Domains list file '$DOMAINS_LIST_FILE' is not readable"
+        exit 1
+    fi
+    if [[ ! -s "$DOMAINS_LIST_FILE" ]]; then
+        echo "Error: Domains list file '$DOMAINS_LIST_FILE' is empty"
+        exit 1
+    fi
+    # Resume mode doesn't work with domain list
+    if [[ "$RESUME_MODE" == true ]]; then
+        echo "Error: -r|--resume flag cannot be used with -dL|--domains-list"
+        exit 1
+    fi
+fi
+
+# Validate single domain if -d is used (without -dL)
+if [[ -z "$DOMAINS_LIST_FILE" && -z "$TARGET" && "$RESUME_MODE" == false ]]; then
+    echo "Error: Target domain is required. Use -d <domain> or -dL <file>"
     exit 1
 fi
 
@@ -204,51 +238,59 @@ AREUROOTUSER
 # Base directory
 BASEDIR="scans"
 
-# Track completed functions from resume.cfg
-COMPLETED_FUNCS=()
+# Function to process a single domain
+process_domain() {
+    local domain="$1"
+    
+    # Set TARGET and ESCAPED_TARGET for this domain
+    TARGET="$domain"
+    ESCAPED_TARGET=$(echo "$TARGET" | sed 's/\./\\./g')
+    
+    # Track completed functions from resume.cfg
+    COMPLETED_FUNCS=()
+    
+    if [[ "$RESUME_MODE" == true ]]; then
+        UNIQUEDOMAINDIR="$BASEDIR/$RESUME_TARGET"
+        RESUMELOGFILE="$UNIQUEDOMAINDIR/resume.cfg"
+        if [[ -f "$RESUMELOGFILE" ]]; then
+            # Remove colors, remove everything after colon, then extract function name
+            mapfile -t COMPLETED_FUNCS < <(sed 's/\x1b\[[0-9;]*m//g' "$RESUMELOGFILE" | cut -d':' -f1 | awk '{print $2}')
+        else
+            echo "Error: Resume file '$RESUMELOGFILE' not found."
+            exit 1
+        fi
 
-if [[ "$RESUME_MODE" == true ]]; then
-    UNIQUEDOMAINDIR="$BASEDIR/$RESUME_TARGET"
-    RESUMELOGFILE="$UNIQUEDOMAINDIR/resume.cfg"
-    if [[ -f "$RESUMELOGFILE" ]]; then
-        # Remove colors, remove everything after colon, then extract function name
-        mapfile -t COMPLETED_FUNCS < <(sed 's/\x1b\[[0-9;]*m//g' "$RESUMELOGFILE" | cut -d':' -f1 | awk '{print $2}')
-    else
-        echo "Error: Resume file '$RESUMELOGFILE' not found."
-        exit 1
-    fi
+        # Use these variables in RESUME_MODE also
+        TMPDIR="$UNIQUEDOMAINDIR/.tmp"
 
-    # Use these variables in RESUME_MODE also
-	TMPDIR="$UNIQUEDOMAINDIR/.tmp"
+        # Subdirectories within .tmp
+        SUBDOMAINDIR="$TMPDIR/subdomain"
+        FFUFBRUTE="$TMPDIR/ffufbrute"
+        FAVICON_HASH="$TMPDIR/favicon_hash"
+        SCREENSHOTS="$TMPDIR/screenshots"
+        URLSDIR="$TMPDIR/urls"
+        VULNDIR="$TMPDIR/vuln"
+        GITHUB_ENDPOINTSDIR="$URLSDIR/github_endpoints"
+        CRAWLEYDIR="$URLSDIR/crawley"
+        CARIDDIDIR="$URLSDIR/cariddi"
+        XCRAWL3RDIR="$URLSDIR/xcrawl3r"
+        GOLINKFINDERDIR="$URLSDIR/GoLinkFinder"
+        AUTOMATED_GOOGLE_DORKINGDIR="$URLSDIR/dorks_hunter"
+        SOURCEMAPPERDIR="$URLSDIR/sourcemapper"
+        FTPDIR="$VULNDIR/ftp"
+        IISIDR="$VULNDIR/iis"
+        DOTGITDIR="$VULNDIR/dotgit"
+        PDFTOTEXTDIR="$VULNDIR/pdftotext"
 
-	# Subdirectories within .tmp
-	SUBDOMAINDIR="$TMPDIR/subdomain"
-	FFUFBRUTE="$TMPDIR/ffufbrute"
-	FAVICON_HASH="$TMPDIR/favicon_hash"
-	SCREENSHOTS="$TMPDIR/screenshots"
-	URLSDIR="$TMPDIR/urls"
-	VULNDIR="$TMPDIR/vuln"
-	GITHUB_ENDPOINTSDIR="$URLSDIR/github_endpoints"
-	CRAWLEYDIR="$URLSDIR/crawley"
-	CARIDDIDIR="$URLSDIR/cariddi"
-	XCRAWL3RDIR="$URLSDIR/xcrawl3r"
-	GOLINKFINDERDIR="$URLSDIR/GoLinkFinder"
-	AUTOMATED_GOOGLE_DORKINGDIR="$URLSDIR/dorks_hunter"
-	SOURCEMAPPERDIR="$URLSDIR/sourcemapper"
-	FTPDIR="$VULNDIR/ftp"
-	IISIDR="$VULNDIR/iis"
-	DOTGITDIR="$VULNDIR/dotgit"
-	PDFTOTEXTDIR="$VULNDIR/pdftotext"
+        # Root-level directories in UNIQUEDOMAINDIR
+        ROOT_SUBDOMAINDIR="$UNIQUEDOMAINDIR/subdomain"
+        ROOT_URLSDIR="$UNIQUEDOMAINDIR/urls"
+        ROOT_EMAILSDIR="$UNIQUEDOMAINDIR/emails"
+        ROOT_VULNDIR="$UNIQUEDOMAINDIR/vuln"
+        ROOT_WORDLISTDIR="$UNIQUEDOMAINDIR/wordlist"
 
-	# Root-level directories in UNIQUEDOMAINDIR
-	ROOT_SUBDOMAINDIR="$UNIQUEDOMAINDIR/subdomain"
-	ROOT_URLSDIR="$UNIQUEDOMAINDIR/urls"
-	ROOT_EMAILSDIR="$UNIQUEDOMAINDIR/emails"
-	ROOT_VULNDIR="$UNIQUEDOMAINDIR/vuln"
-	ROOT_WORDLISTDIR="$UNIQUEDOMAINDIR/wordlist"
-
-	ERRORLOGFILE="$UNIQUEDOMAINDIR/error.log"
-	RESUMELOGFILE="$UNIQUEDOMAINDIR/resume.cfg"
+        ERRORLOGFILE="$UNIQUEDOMAINDIR/error.log"
+        RESUMELOGFILE="$UNIQUEDOMAINDIR/resume.cfg"
 else
 	# Function to generate a unique directory name
 	generate_unique_dir(){
@@ -397,11 +439,11 @@ STOP_SPINNER(){
     return $TIME
 }
 
-STARTED_AT=$(date +"%d-%m-%Y_%H:%M:%S")
-START_EPOCH=$(date +%s)
-
-echo -e "Using $CONFIG_PATH"
-echo -e "Saving all files in $UNIQUEDOMAINDIR"
+	STARTED_AT=$(date +"%d-%m-%Y_%H:%M:%S")
+	START_EPOCH=$(date +%s)
+	
+	echo -e "Using $CONFIG_PATH"
+	echo -e "Saving all files in $UNIQUEDOMAINDIR"
 
 
 DOWNLOAD_UPDATED_RESOLVERS(){
@@ -3542,12 +3584,51 @@ else
 fi
 
 
-ENDED_AT=$(date +"%d-%m-%Y_%H:%M:%S")
-END_EPOCH=$(date +%s)
+	ENDED_AT=$(date +"%d-%m-%Y_%H:%M:%S")
+	END_EPOCH=$(date +%s)
+	
+	DURATION=$(( END_EPOCH - START_EPOCH ))
+	TIMETOOK=$(printf "%02d:%02d:%02d" $((DURATION/3600)) $(( (DURATION%3600)/60 )) $((DURATION%60)) )
+	
+	echo -e "${BGREEN}[+] STARTED${RESET}: ${STARTED_AT}, ${BGREEN}FINISHED${RESET}: ${ENDED_AT}, ${BGREEN}TIMETOOK${RESET}: ${TIMETOOK}" | unew -a $RESUMELOGFILE
+	
+	echo -e "Scan finished: $TARGET" | notify -silent -duc -id ${SCAN_FINISHED_NOTIFY}
+}
 
-DURATION=$(( END_EPOCH - START_EPOCH ))
-TIMETOOK=$(printf "%02d:%02d:%02d" $((DURATION/3600)) $(( (DURATION%3600)/60 )) $((DURATION%60)) )
-
-echo -e "${BGREEN}[+] STARTED${RESET}: ${STARTED_AT}, ${BGREEN}FINISHED${RESET}: ${ENDED_AT}, ${BGREEN}TIMETOOK${RESET}: ${TIMETOOK}" | unew -a $RESUMELOGFILE
-
-echo -e "Scan finished: $TARGET" | notify -silent -duc -id ${SCAN_FINISHED_NOTIFY}
+# Process domains based on input method
+if [[ -n "$DOMAINS_LIST_FILE" ]]; then
+    # Read domains from file into array, skipping empty lines and comments
+    DOMAINS_ARRAY=()
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # Trim whitespace
+        line=$(echo "$line" | xargs)
+        # Skip empty lines and comments (lines starting with #)
+        if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
+            DOMAINS_ARRAY+=("$line")
+        fi
+    done < "$DOMAINS_LIST_FILE"
+    
+    # Check if we have any domains
+    if [[ ${#DOMAINS_ARRAY[@]} -eq 0 ]]; then
+        echo "Error: No valid domains found in '$DOMAINS_LIST_FILE'"
+        exit 1
+    fi
+    
+    # Process each domain
+    TOTAL_DOMAINS=${#DOMAINS_ARRAY[@]}
+    CURRENT_DOMAIN=0
+    
+    for domain in "${DOMAINS_ARRAY[@]}"; do
+        ((CURRENT_DOMAIN++))
+        echo -e "${BGREEN}Processing [${CURRENT_DOMAIN}/${TOTAL_DOMAINS}]: ${domain}${RESET}"
+        process_domain "$domain"
+    done
+else
+    # Single domain processing (existing behavior)
+    # If RESUME_MODE is true and TARGET is empty, try to extract domain from RESUME_TARGET
+    if [[ "$RESUME_MODE" == true && -z "$TARGET" ]]; then
+        # RESUME_TARGET is usually "domain.com" or "domain.com_1", extract domain part
+        TARGET=$(echo "$RESUME_TARGET" | sed 's/_[0-9]*$//')
+    fi
+    process_domain "$TARGET"
+fi
