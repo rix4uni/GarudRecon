@@ -20,6 +20,7 @@ ACTIVE_ENUM=false
 # New variable
 RESUME_MODE=false
 RESUME_TARGET=""
+VERBOSE=false
 
 # Help function
 function show_help() {
@@ -46,6 +47,7 @@ Flags:
   -oos, --outofscope			Exclude outofscope subdomains from a list (e.g. domain.com.oos)
   -c, --config				Custom configuration file path
   -r, --resume <scan_folder>   		Resume stopped/uncompleted scan from /root/.garudrecon/scans/<scan_folder> (e.g., --resume domain.com or --resume domain.com_1). Skips functions already completed in resume.cfg.
+  -v, --verbose				Show file paths where scan results are saved
   -h, --help				help for mediumscope
 
 Example:
@@ -166,6 +168,10 @@ while [[ "$#" -gt 0 ]]; do
             RESUME_TARGET="$2"
             shift 2
             ;;
+        -v|--verbose)
+            VERBOSE=true
+            shift
+            ;;
         -h|--help)
 	        show_help
 	        exit 0
@@ -263,32 +269,6 @@ process_domain() {
         # Use these variables in RESUME_MODE also
         TMPDIR="$UNIQUEDOMAINDIR/.tmp"
 
-        # Subdirectories within .tmp
-        SUBDOMAINDIR="$TMPDIR/subdomain"
-        FFUFBRUTE="$TMPDIR/ffufbrute"
-        FAVICON_HASH="$TMPDIR/favicon_hash"
-        SCREENSHOTS="$TMPDIR/screenshots"
-        URLSDIR="$TMPDIR/urls"
-        VULNDIR="$TMPDIR/vuln"
-        GITHUB_ENDPOINTSDIR="$URLSDIR/github_endpoints"
-        CRAWLEYDIR="$URLSDIR/crawley"
-        CARIDDIDIR="$URLSDIR/cariddi"
-        XCRAWL3RDIR="$URLSDIR/xcrawl3r"
-        GOLINKFINDERDIR="$URLSDIR/GoLinkFinder"
-        AUTOMATED_GOOGLE_DORKINGDIR="$URLSDIR/dorks_hunter"
-        SOURCEMAPPERDIR="$URLSDIR/sourcemapper"
-        FTPDIR="$VULNDIR/ftp"
-        IISIDR="$VULNDIR/iis"
-        DOTGITDIR="$VULNDIR/dotgit"
-        PDFTOTEXTDIR="$VULNDIR/pdftotext"
-
-        # Root-level directories in UNIQUEDOMAINDIR
-        ROOT_SUBDOMAINDIR="$UNIQUEDOMAINDIR/subdomain"
-        ROOT_URLSDIR="$UNIQUEDOMAINDIR/urls"
-        ROOT_EMAILSDIR="$UNIQUEDOMAINDIR/emails"
-        ROOT_VULNDIR="$UNIQUEDOMAINDIR/vuln"
-        ROOT_WORDLISTDIR="$UNIQUEDOMAINDIR/wordlist"
-
         ERRORLOGFILE="$UNIQUEDOMAINDIR/error.log"
         RESUMELOGFILE="$UNIQUEDOMAINDIR/resume.cfg"
 else
@@ -309,32 +289,6 @@ else
 	UNIQUEDOMAINDIR=$(generate_unique_dir)
 	TMPDIR="$UNIQUEDOMAINDIR/.tmp"
 
-	# Subdirectories within .tmp
-	SUBDOMAINDIR="$TMPDIR/subdomain"
-	FFUFBRUTE="$TMPDIR/ffufbrute"
-	FAVICON_HASH="$TMPDIR/favicon_hash"
-	SCREENSHOTS="$TMPDIR/screenshots"
-	URLSDIR="$TMPDIR/urls"
-	VULNDIR="$TMPDIR/vuln"
-	GITHUB_ENDPOINTSDIR="$URLSDIR/github_endpoints"
-	CRAWLEYDIR="$URLSDIR/crawley"
-	CARIDDIDIR="$URLSDIR/cariddi"
-	XCRAWL3RDIR="$URLSDIR/xcrawl3r"
-	GOLINKFINDERDIR="$URLSDIR/GoLinkFinder"
-	AUTOMATED_GOOGLE_DORKINGDIR="$URLSDIR/dorks_hunter"
-	SOURCEMAPPERDIR="$URLSDIR/sourcemapper"
-	FTPDIR="$VULNDIR/ftp"
-	IISIDR="$VULNDIR/iis"
-	DOTGITDIR="$VULNDIR/dotgit"
-	PDFTOTEXTDIR="$VULNDIR/pdftotext"
-
-	# Root-level directories in UNIQUEDOMAINDIR
-	ROOT_SUBDOMAINDIR="$UNIQUEDOMAINDIR/subdomain"
-	ROOT_URLSDIR="$UNIQUEDOMAINDIR/urls"
-	ROOT_EMAILSDIR="$UNIQUEDOMAINDIR/emails"
-	ROOT_VULNDIR="$UNIQUEDOMAINDIR/vuln"
-	ROOT_WORDLISTDIR="$UNIQUEDOMAINDIR/wordlist"
-
 	ERRORLOGFILE="$UNIQUEDOMAINDIR/error.log"
 	RESUMELOGFILE="$UNIQUEDOMAINDIR/resume.cfg"
 
@@ -343,36 +297,12 @@ else
 	# Subdirectories within .tmp
 	mkdir -p "$UNIQUEDOMAINDIR"
 	mkdir -p "$TMPDIR"
-	mkdir -p "$SUBDOMAINDIR"
-	mkdir -p "$FFUFBRUTE"
-	mkdir -p "$FAVICON_HASH"
-	mkdir -p "$SCREENSHOTS"
-	mkdir -p "$URLSDIR"
-	mkdir -p "$VULNDIR"
-	mkdir -p "$GITHUB_ENDPOINTSDIR"
-	mkdir -p "$CRAWLEYDIR"
-	mkdir -p "$CARIDDIDIR"
-	mkdir -p "$XCRAWL3RDIR"
-	mkdir -p "$GOLINKFINDERDIR"
-	mkdir -p "$AUTOMATED_GOOGLE_DORKINGDIR"
-	mkdir -p "$SOURCEMAPPERDIR"
-	mkdir -p "$FTPDIR"
-	mkdir -p "$IISIDR"
-	mkdir -p "$DOTGITDIR"
-	mkdir -p "$PDFTOTEXTDIR"
-
-	# Root-level directories in UNIQUEDOMAINDIR
-	mkdir -p "$ROOT_SUBDOMAINDIR"
-	mkdir -p "$ROOT_URLSDIR"
-	mkdir -p "$ROOT_EMAILSDIR"
-	mkdir -p "$ROOT_VULNDIR"
-	mkdir -p "$ROOT_WORDLISTDIR"
 fi
 
 # Creating files
-touch "$URLSDIR/crunchbase.txt"
-touch "$URLSDIR/manual_google_dorking.urls"
-touch "$URLSDIR/burpsuite.urls"
+touch "$TMPDIR/crunchbase.txt"
+touch "$TMPDIR/manual_google_dorking.urls"
+touch "$TMPDIR/burpsuite.urls"
 
 # Utility function to check if a function is excluded or already completed
 is_excluded() {
@@ -388,6 +318,25 @@ is_excluded() {
         fi
     done
     return 1
+}
+
+# Function to format file paths for display (convert $HOME to ~)
+format_path_for_display() {
+    echo $1
+}
+
+# Function to display scan results with optional verbose file path
+DISPLAYINFO() {
+	local func_name="$1"
+	local file_path="$2"
+	local line_count=$(wc -l 2>/dev/null < "$file_path" || echo 0)
+	
+	if [[ "$VERBOSE" == true ]]; then
+		local formatted_path=$(format_path_for_display "$file_path")
+		echo -e "${BGREEN}[+] ${func_name}${RESET}: ${line_count}, ${TIME} seconds: ${formatted_path}" | unew -a $RESUMELOGFILE
+	else
+		echo -e "${BGREEN}[+] ${func_name}${RESET}: ${line_count}, ${TIME} seconds" | unew -a $RESUMELOGFILE
+	fi
 }
 
 run() {
@@ -467,161 +416,124 @@ NUCLEIHUB_TEMPLATES(){
 SUBFINDER(){
 	START_SPINNER "${BGREEN}SUBFINDER${RESET}"
 
-	subfinder -duc -silent -d ${TARGET} -all -config ~/.config/subfinder/config.yaml -pc ~/.config/subfinder/provider-config.yaml -max-time ${SUBFINDER_ENUM_TIMEOUT} | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/subfinder.subs
+	timelimitx -t ${SUBFINDER_TIMELIMITX} "subfinder -duc -silent -d ${TARGET} -all | unew -ef -el -i -t -q ${TMPDIR}/subfinder.subs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SUBFINDER${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/subfinder.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SUBFINDER" "${TMPDIR}/subfinder.subs"
 }
 
 AMASS(){
 	START_SPINNER "${BGREEN}AMASS${RESET}"
 
-	amass enum -nocolor -nolocaldb -passive -norecursive -noalts -d ${TARGET} -config ~/.config/amass/config.ini -timeout ${AMASS_ENUM_TIMEOUT} 2>/dev/null | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/amass.subs
+	timelimitx -t ${AMASS_TIMELIMITX} "amass enum -nocolor -nolocaldb -passive -norecursive -noalts -d ${TARGET} 2>/dev/null | unew -ef -el -i -t -q ${TMPDIR}/amass.subs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] AMASS${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/amass.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "AMASS" "${TMPDIR}/amass.subs"
 }
 
 SUBDOG(){
 	START_SPINNER "${BGREEN}SUBDOG${RESET}"
 
-	echo ${TARGET} | subdog --silent --source all | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/subdog.subs
+	timelimitx -t ${SUBDOG_TIMELIMITX} "echo ${TARGET} | subdog --silent --source all | unew -ef -el -i -t -q ${TMPDIR}/subdog.subs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SUBDOG${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/subdog.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SUBDOG" "${TMPDIR}/subdog.subs"
 }
 
 XSUBFIND3R(){
 	START_SPINNER "${BGREEN}XSUBFIND3R${RESET}"
 
-	echo ${TARGET} | xsubfind3r --silent | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/xsubfind3r.subs
+	timelimitx -t ${XSUBFIND3R_TIMELIMITX} "echo ${TARGET} | xsubfind3r --silent | unew -ef -el -i -t -q ${TMPDIR}/xsubfind3r.subs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] XSUBFIND3R${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/xsubfind3r.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "XSUBFIND3R" "${TMPDIR}/xsubfind3r.subs"
 }
 
 FINDOMAIN(){
 	START_SPINNER "${BGREEN}FINDOMAIN${RESET}"
 
-	findomain -t ${TARGET} -q | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/findomain.subs
+	timelimitx -t ${FINDOMAIN_TIMELIMITX} "findomain -t ${TARGET} -q | unew -ef -el -i -t -q ${TMPDIR}/findomain.subs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] FINDOMAIN${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/findomain.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "FINDOMAIN" "${TMPDIR}/findomain.subs"
 }
 
 CHAOS(){
 	START_SPINNER "${BGREEN}CHAOS${RESET}"
 
-	chaos -duc -silent -d ${TARGET} -key $(shuf -n 1 ~/.config/chaos/chaos-api.txt) | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/chaos.subs
+	timelimitx -t ${CHAOS_TIMELIMITX} "chaos -duc -silent -d ${TARGET} -key $(shuf -n 1 ~/.config/chaos/chaos-api.txt) | unew -ef -el -i -t -q ${TMPDIR}/chaos.subs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] CHAOS${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/chaos.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "CHAOS" "${TMPDIR}/chaos.subs"
 }
 
 GITHUB_SUBDOMAINS(){
 	START_SPINNER "${BGREEN}GITHUB_SUBDOMAINS${RESET}"
 
-	github-subdomains -d ${TARGET} -t ~/.config/github-subdomains/.github_tokens -o ${SUBDOMAINDIR}/tmp-github-subdomains.subs &>/dev/null
-	cat ${SUBDOMAINDIR}/tmp-github-subdomains.subs | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/github-subdomains.subs && rm -rf ${SUBDOMAINDIR}/tmp-github-subdomains.subs
+	timelimitx -t ${GITHUB_SUBDOMAINS_TIMELIMITX} "github-subdomains -d ${TARGET} -t ~/.config/github-subdomains/.github_tokens -o ${TMPDIR}/github-subdomains.subs >/dev/null 2>&1"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] GITHUB_SUBDOMAINS${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/github-subdomains.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "GITHUB_SUBDOMAINS" "${TMPDIR}/github-subdomains.subs"
 }
 
 BBOT(){
 	START_SPINNER "${BGREEN}BBOT${RESET}"
 
-	bbot --silent -t ${TARGET} -f subdomain-enum -rf passive -n bbot_scan -o $SUBDOMAINDIR -y &>/dev/null
-	cat ${SUBDOMAINDIR}/bbot_scan/subdomains.txt | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/bbot.subs
+	timelimitx -t ${BBOT_TIMELIMITX} "bbot --silent -t ${TARGET} -f subdomain-enum -rf passive -n bbot_scan -o $TMPDIR -y >/dev/null 2>&1"
+	cat ${TMPDIR}/bbot_scan/subdomains.txt | unew -ef -el -i -t -q ${TMPDIR}/bbot.subs
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] BBOT${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/bbot.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "BBOT" "${TMPDIR}/bbot.subs"
 }
 
 SHOSUBGO(){
 	START_SPINNER "${BGREEN}SHOSUBGO${RESET}"
 
-	shosubgo -d ${TARGET} -s $(shuf -n 1 ~/.config/shosubgo/shosubgo-api.txt) | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/shosubgo.subs
+	timelimitx -t ${SHOSUBGO_TIMELIMITX} "shosubgo -d ${TARGET} -s $(shuf -n 1 ~/.config/shosubgo/shosubgo-api.txt) | unew -ef -el -i -t -q ${TMPDIR}/shosubgo.subs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SHOSUBGO${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/shosubgo.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SHOSUBGO" "${TMPDIR}/shosubgo.subs"
 }
 
 ORG2ASN(){
 	START_SPINNER "${BGREEN}ORG2ASN${RESET}"
 
 	if [ "$ORG2ASN_SCAN_MODE" = "NORMAL" ]; then
-		echo "$TARGET" | tldinfo --silent --extract domain | org2asn -silent | unew -el -t -q ${SUBDOMAINDIR}/org2asn.txt
+		timelimitx -t ${ORG2ASN_TIMELIMITX} "echo "$TARGET" | tldinfo --silent --extract domain | org2asn -silent | unew -ef -el -t -q ${TMPDIR}/org2asn.txt"
 	fi
 
 	if [ "$ORG2ASN_SCAN_MODE" = "ADVANCED" ]; then
-		echo "$TARGET" | tldinfo --silent --extract domain | org2asn -silent | unew -el -t -q ${SUBDOMAINDIR}/org2asn.txt
-		cat ${SUBDOMAINDIR}/org2asn.txt | cut -d"[" -f5 | sed 's/]$//' | org2asn -silent | unew -el -t -q ${SUBDOMAINDIR}/org2asn.txt
+		timelimitx -t ${ORG2ASN_TIMELIMITX} "echo "$TARGET" | tldinfo --silent --extract domain | org2asn -silent | unew | cut -d"[" -f5 | sed 's/]$//' | org2asn -silent | unew -ef -el -t -q ${TMPDIR}/org2asn.txt"
 	fi
 
 	# Common steps for both conditions
-	sed -i 's/^[^]]*] //' ${SUBDOMAINDIR}/org2asn.txt
-	cat ${SUBDOMAINDIR}/org2asn.txt | grep -oP '\[.*?\](?= \[ASN\])' | sed 's/^\[//' | sed 's/\]$//' | unew -el -t -q ${SUBDOMAINDIR}/asns.txt
-	cat ${SUBDOMAINDIR}/org2asn.txt | grep -oP '\[.*?\](?= \[Route\])' | sed 's/^\[//' | sed 's/\]$//' | unew -el -t -q ${SUBDOMAINDIR}/ips.txt
-	cat ${SUBDOMAINDIR}/org2asn.txt | grep -oP '(?<=\[ASN\] ).*' | sed 's/^\[//' | sed 's/\]$//' | unew -el -t -q ${SUBDOMAINDIR}/orgs.txt
-	cat ${SUBDOMAINDIR}/org2asn.txt | grep -oP '(?<=\[Route\] ).*' | sed 's/^\[//' | sed 's/\]$//' | unew -el -t -q ${SUBDOMAINDIR}/orgs.txt
+	sed -i 's/^[^]]*] //' ${TMPDIR}/org2asn.txt 2>/dev/null
+	cat ${TMPDIR}/org2asn.txt 2>/dev/null | grep -oP '\[.*?\](?= \[ASN\])' | sed 's/^\[//' | sed 's/\]$//' | unew -ef -el -t -q ${TMPDIR}/asns.txt
+	cat ${TMPDIR}/org2asn.txt 2>/dev/null | grep -oP '\[.*?\](?= \[Route\])' | sed 's/^\[//' | sed 's/\]$//' | unew -ef -el -t -q ${TMPDIR}/ips.txt
+	cat ${TMPDIR}/org2asn.txt 2>/dev/null | grep -oP '(?<=\[ASN\] ).*' | sed 's/^\[//' | sed 's/\]$//' | unew -ef -el -t -q ${TMPDIR}/orgs.txt
+	cat ${TMPDIR}/org2asn.txt 2>/dev/null | grep -oP '(?<=\[Route\] ).*' | sed 's/^\[//' | sed 's/\]$//' | unew -ef -el -t -q ${TMPDIR}/orgs.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ORG2ASN${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/org2asn.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ORG2ASN" "${TMPDIR}/org2asn.txt"
 }
 
 ARINRANGE(){
 	START_SPINNER "${BGREEN}ARINRANGE${RESET}"
 
-	cat ${SUBDOMAINDIR}/orgs.txt | arinrange --silent | mapcidr -silent -aggregate | unew -el -t -q ${SUBDOMAINDIR}/ips.txt
+	timelimitx -t ${ARINRANGE_TIMELIMITX} "cat ${TMPDIR}/orgs.txt | arinrange --silent | mapcidr -silent -aggregate | unew -ef -el -t -q ${TMPDIR}/ips.txt"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ARINRANGE${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/ips.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
-SPK(){
-	START_SPINNER "${BGREEN}SPK${RESET}"
-
-	if [ "$SPK_SCAN_MODE" = "NORMAL" ]; then
-		timelimitx -t ${SPK_TIMELIMITX} "for ORG in $(cat ${SUBDOMAINDIR}/orgs.txt);do spk -silent -s \"$ORG\" | unew -el -t -q ${SUBDOMAINDIR}/ips.txt;done"
-	fi
-
-	if [ "$SPK_SCAN_MODE" = "ADVANCED" ]; then
-		timelimitx -t ${SPK_TIMELIMITX} "for ORG in $(cat ${SUBDOMAINDIR}/orgs.txt);do spk -silent -s \"$ORG\" | unew -el -t -q ${SUBDOMAINDIR}/ips.txt;done"
-	fi
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] SPK${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/ips.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ARINRANGE" "${TMPDIR}/ips.txt"
 }
 
 IPFINDER(){
 	START_SPINNER "${BGREEN}IPFINDER${RESET}"
-	echo 'ssl:"$TARGET"' | ipfinder shodan --silent | unew -el -t -q ${SUBDOMAINDIR}/ips.txt
-	echo 'hostname:"$TARGET"' | ipfinder shodan --silent | unew -el -t -q ${SUBDOMAINDIR}/ips.txt
-	echo 'ssl.cert.subject.cn:"$TARGET"' | ipfinder shodan --silent | unew -el -t -q ${SUBDOMAINDIR}/ips.txt
+	timelimitx -t ${IPFINDER_TIMELIMITX} "echo 'ssl:"$TARGET"' | ipfinder shodan --silent | unew -ef -el -t -q ${TMPDIR}/ips.txt"
+	timelimitx -t ${IPFINDER_TIMELIMITX} "echo 'hostname:"$TARGET"' | ipfinder shodan --silent | unew -ef -el -t -q ${TMPDIR}/ips.txt"
+	timelimitx -t ${IPFINDER_TIMELIMITX} "echo 'ssl.cert.subject.cn:"$TARGET"' | ipfinder shodan --silent | unew -ef -el -t -q ${TMPDIR}/ips.txt"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] IPFINDER${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/ips.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
-ASNMAP(){
-	START_SPINNER "${BGREEN}ASNMAP${RESET}"
-
-	echo "$TARGET" | asnmap -duc -silent | unew -el -t -q ${SUBDOMAINDIR}/asnmap.txt
-	cat ${SUBDOMAINDIR}/asns.txt | asnmap -duc -silent | unew -el -t -q ${SUBDOMAINDIR}/asnmap.txt
-	cat ${SUBDOMAINDIR}/orgs.txt | asnmap -duc -silent | unew -el -t -q ${SUBDOMAINDIR}/asnmap.txt
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] ASNMAP${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/asnmap.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
-UDON(){
-	START_SPINNER "${BGREEN}UDON${RESET}"
-
-	for id in $(cat ${SUBDOMAINDIR}/tag-history.txt);do udon -silent -s $id | unew -el -i -t -q ${SUBDOMAINDIR}/udon.subs;done
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] UDON${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/builtwith.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "IPFINDER" "${TMPDIR}/ips.txt"
 }
 
 
@@ -631,14 +543,14 @@ UDON(){
 KAEFERJAEGER(){
 	START_SPINNER "${BGREEN}KAEFERJAEGER${RESET}"
 
-	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/amazon/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/kaeferjaeger.subs
-	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/digitalocean/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/kaeferjaeger.subs
-	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/google/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/kaeferjaeger.subs
-	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/microsoft/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/kaeferjaeger.subs
-	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/oracle/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/kaeferjaeger.subs
+	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/amazon/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -ef -el -i -t -q ${TMPDIR}/kaeferjaeger.subs
+	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/digitalocean/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -ef -el -i -t -q ${TMPDIR}/kaeferjaeger.subs
+	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/google/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -ef -el -i -t -q ${TMPDIR}/kaeferjaeger.subs
+	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/microsoft/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -ef -el -i -t -q ${TMPDIR}/kaeferjaeger.subs
+	curl -s "https://kaeferjaeger.gay/sni-ip-ranges/oracle/ipv4_merged_sni.txt" | awk -F'-- ' '{print $2}' |  tr ' ' '\n' | tr '[' ' ' | sed 's/\]//' | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -ef -el -i -t -q ${TMPDIR}/kaeferjaeger.subs
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] KAEFERJAEGER${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/kaeferjaeger.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "KAEFERJAEGER" "${TMPDIR}/kaeferjaeger.subs"
 }
 
 
@@ -649,15 +561,15 @@ CERTINFO(){
 	START_SPINNER "${BGREEN}CERTINFO${RESET}"
 
 	if [ "$CERTINFO_SCAN_MODE" = "NORMAL" ]; then
-		cat ${SUBDOMAINDIR}/*.subs | unew | certinfo -silent -c 50 | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/certinfo.subs
+		timelimitx -t ${CERTINFO_TIMELIMITX} "cat ${TMPDIR}/*.subs | unew | certinfo -silent -c 50 | unew -ef -el -i -t -q ${TMPDIR}/certinfo.subs"
 	fi
 
 	if [ "$CERTINFO_SCAN_MODE" = "ADVANCED" ]; then
-		cat ${SUBDOMAINDIR}/*.subs | unew | certinfo -silent -c 50 -recursive | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/certinfo.subs
+		timelimitx -t ${CERTINFO_TIMELIMITX} "cat ${TMPDIR}/*.subs | unew | certinfo -silent -c 50 -recursive | unew -ef -el -i -t -q ${TMPDIR}/certinfo.subs"
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] CERTINFO${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/certinfo.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "CERTINFO" "${TMPDIR}/certinfo.subs"
 }
 
 
@@ -667,52 +579,43 @@ CERTINFO(){
 CSPFINDER(){
 	START_SPINNER "${BGREEN}CSPFINDER${RESET}"
 
-	cat ${SUBDOMAINDIR}/*.subs | unew | cspfinder -silent -concurrent ${CSPFINDER_THREADS} -timeout ${CSPFINDER_TIMEOUT} | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/cspfinder.subs
+	timelimitx -t ${CSPFINDER_TIMELIMITX} "cat ${TMPDIR}/*.subs | unew | cspfinder -silent -concurrent ${CSPFINDER_THREADS} -timeout ${CSPFINDER_TIMEOUT} | unew -ef -el -i -t -q ${TMPDIR}/cspfinder.subs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] CSPFINDER${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/cspfinder.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "CSPFINDER" "${TMPDIR}/cspfinder.subs"
 }
 
 JSUBFINDER(){
 	START_SPINNER "${BGREEN}JSUBFINDER${RESET}"
 
 	if [ "$JSUBFINDER_SCAN_MODE" = "NORMAL" ]; then
-		echo ${TARGET} | jsubfinder search | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/jsubfinder.subs
+		timelimitx -t ${JSUBFINDER_TIMELIMITX} "echo ${TARGET} | jsubfinder search | unew -ef -el -i -t -q ${TMPDIR}/jsubfinder.subs"
 	fi
 
 	if [ "$JSUBFINDER_SCAN_MODE" = "ADVANCED" ]; then
-		cat ${SUBDOMAINDIR}/*.subs | jsubfinder search | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/jsubfinder.subs
+		timelimitx -t ${JSUBFINDER_TIMELIMITX} "cat ${TMPDIR}/*.subs | jsubfinder search | unew -ef -el -i -t -q ${TMPDIR}/jsubfinder.subs"
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] JSUBFINDER${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/jsubfinder.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "JSUBFINDER" "${TMPDIR}/jsubfinder.subs"
 }
 
 ALLSUBDOMAIN(){
 	START_SPINNER "${BGREEN}ALLSUBDOMAIN${RESET}"
 
-	cat ${SUBDOMAINDIR}/*.subs | unew -el -i -t -q ${ROOT_SUBDOMAINDIR}/allsubs.txt
+	cat ${TMPDIR}/*.subs | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -ef -el -i -t -q ${UNIQUEDOMAINDIR}/allsubs.txt
 
 	# Remove out-of-scope subdomains using dynamic OOS file
 	if [[ -n "$OOS_FILE" ]]; then
-		cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | oosexclude -e "$OOS_FILE" | unew -el -i -t -q ${ROOT_SUBDOMAINDIR}/oosexclude_allsubs.txt
-		rm -rf ${ROOT_SUBDOMAINDIR}/allsubs.txt
-		mv ${ROOT_SUBDOMAINDIR}/oosexclude_allsubs.txt ${ROOT_SUBDOMAINDIR}/allsubs.txt
+		cat ${UNIQUEDOMAINDIR}/allsubs.txt | oosexclude -e "$OOS_FILE" | unew -ef -el -i -t -q ${UNIQUEDOMAINDIR}/oosexclude_allsubs.txt
+		rm -rf ${UNIQUEDOMAINDIR}/allsubs.txt
+		mv ${UNIQUEDOMAINDIR}/oosexclude_allsubs.txt ${UNIQUEDOMAINDIR}/allsubs.txt
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ALLSUBDOMAIN${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/allsubs.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ALLSUBDOMAIN" "${UNIQUEDOMAINDIR}/allsubs.txt"
 }
 
-SUBWIZ(){
-	START_SPINNER "${BGREEN}SUBWIZ${RESET}"
-
-	subwiz -i ${ROOT_SUBDOMAINDIR}/allsubs.txt --num_predictions ${SUBWIZ_NUM_PREDICTIONS} -o ${SUBDOMAINDIR}/tmp_subwiz.subs
-	cat ${SUBDOMAINDIR}/tmp_subwiz.subs 2>/dev/null | eval ${SUBDOMAIN_FILTER} | grep -aE "^(.*\.)?$ESCAPED_TARGET$" | unew -el -i -t -q ${SUBDOMAINDIR}/subwiz.subs
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] SUBWIZ${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/subwiz.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
 
 ###############################################################################################################
 ####################################### SUBDOMAIN PERMUTATIONS ###############################################
@@ -720,75 +623,75 @@ SUBWIZ(){
 ALTDNS(){
 	START_SPINNER "${BGREEN}ALTDNS${RESET}"
 
-	altdns -i ${ROOT_SUBDOMAINDIR}/allsubs.txt -o ${SUBDOMAINDIR}/altdns.activesubs -w ${WORDLIST_BASEDIR}/perms.txt
+	timelimitx -t ${ALTDNS_TIMELIMITX} "altdns -i ${UNIQUEDOMAINDIR}/allsubs.txt -o ${TMPDIR}/altdns.activesubs -w ${WORDLIST_BASEDIR}/perms.txt"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ALTDNS${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/altdns.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ALTDNS" "${TMPDIR}/altdns.subs"
 }
 
 PUREDNS_BRUTEFORCE(){
 	START_SPINNER "${BGREEN}PUREDNS${RESET}"
 
 	DOWNLOAD_UPDATED_RESOLVERS
-	puredns bruteforce --quiet $FFUFBRUTE_DEFAULT_CUSTOM_WORDLIST -d ${ROOT_SUBDOMAINDIR}/allsubs.txt -r ${ROOT_WORDLISTDIR}/resolvers.txt --skip-sanitize --skip-validation --skip-wildcard-filter --wildcard-tests ${PUREDNS_WILDCARD_TESTS} -w puredns.activesubs
+	timelimitx -t ${PUREDNS_BRUTEFORCE_TIMELIMITX} "puredns bruteforce --quiet $FFUFBRUTE_DEFAULT_CUSTOM_WORDLIST -d ${UNIQUEDOMAINDIR}/allsubs.txt -r ${UNIQUEDOMAINDIR}/resolvers.txt --skip-sanitize --skip-validation --skip-wildcard-filter --wildcard-tests ${PUREDNS_WILDCARD_TESTS} -w puredns.activesubs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] PUREDNS_BRUTEFORCE${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/puredns.activesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "PUREDNS_BRUTEFORCE" "${TMPDIR}/puredns.activesubs"
 }
 
 ALTERX(){
 	START_SPINNER "${BGREEN}ALTERX${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | alterx -duc -silent -o ${SUBDOMAINDIR}/alterx.activesubs
+	timelimitx -t ${ALTERX_TIMELIMITX} "cat ${UNIQUEDOMAINDIR}/allsubs.txt | alterx -duc -silent -o ${TMPDIR}/alterx.activesubs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ALTERX${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/alterx.activesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ALTERX" "${TMPDIR}/alterx.activesubs"
 }
 
 GOTATOR(){
 	START_SPINNER "${BGREEN}GOTATOR${RESET}"
 
-	gotator -silent -sub ${ROOT_SUBDOMAINDIR}/allsubs.txt -perm ${WORDLIST_BASEDIR}/perms.txt -depth ${GOTATOR_DEPTH} -numbers ${GOTATOR_NUMBERS} -mindup -adv -md | head -c ${GOTATOR_MAX_SIZE} >> ${SUBDOMAINDIR}/gotator.activesubs
+	timelimitx -t ${GOTATOR_TIMELIMITX} "gotator -silent -sub ${UNIQUEDOMAINDIR}/allsubs.txt -perm ${WORDLIST_BASEDIR}/perms.txt -depth ${GOTATOR_DEPTH} -numbers ${GOTATOR_NUMBERS} -mindup -adv -md | head -c ${GOTATOR_MAX_SIZE} >> ${TMPDIR}/gotator.activesubs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] GOTATOR${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/gotator.activesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "GOTATOR" "${TMPDIR}/gotator.activesubs"
 }
 
 DNSGEN(){
 	START_SPINNER "${BGREEN}DNSGEN${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | dnsgen -w ${WORDLIST_BASEDIR}/perms.txt - >> ${SUBDOMAINDIR}/dnsgen.activesubs
+	timelimitx -t ${DNSGEN_TIMELIMITX} "cat ${UNIQUEDOMAINDIR}/allsubs.txt | dnsgen -w ${WORDLIST_BASEDIR}/perms.txt - >> ${TMPDIR}/dnsgen.activesubs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] DNSGEN${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/dnsgen.activesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "DNSGEN" "${TMPDIR}/dnsgen.activesubs"
 }
 
 GOALTDNS(){
 	START_SPINNER "${BGREEN}GOALTDNS${RESET}"
 
-	goaltdns -l ${ROOT_SUBDOMAINDIR}/allsubs.txt -w ${WORDLIST_BASEDIR}/perms.txt -o ${SUBDOMAINDIR}/goaltdns.activesubs
+	timelimitx -t ${GOALTDNS_TIMELIMITX} "goaltdns -l ${UNIQUEDOMAINDIR}/allsubs.txt -w ${WORDLIST_BASEDIR}/perms.txt -o ${TMPDIR}/goaltdns.activesubs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] GOALTDNS${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/goaltdns.activesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "GOALTDNS" "${TMPDIR}/goaltdns.activesubs"
 }
 
 DMUT(){
 	START_SPINNER "${BGREEN}DMUT${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | dmut -d ${WORDLIST_BASEDIR}/perms.txt -s ${ROOT_WORDLISTDIR}/resolvers.txt -w 100 --dns-timeout 300 --dns-retries 3 --dns-errorLimit 10 --show-stats -o ${SUBDOMAINDIR}/dmut.activesubs
+	timelimitx -t ${DMUT_TIMELIMITX} "cat ${UNIQUEDOMAINDIR}/allsubs.txt | dmut -d ${WORDLIST_BASEDIR}/perms.txt -s ${ROOT_WORDLISTDIR}/resolvers.txt -w 100 --dns-timeout 300 --dns-retries 3 --dns-errorLimit 10 --show-stats -o ${TMPDIR}/dmut.activesubs"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] DMUT${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/dmut.activesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "DMUT" "${TMPDIR}/dmut.activesubs"
 }
 
 
 ALLSUBDOMAIN_PERMUTATIONS(){
 	START_SPINNER "${BGREEN}ALLSUBDOMAIN_PERMUTATIONS${RESET}"
 
-	cat ${SUBDOMAINDIR}/*.activesubs | unew -el -i -t -q ${SUBDOMAINDIR}/allpermutationssubs.txt
+	cat ${TMPDIR}/*.activesubs | unew -el -i -t -q ${TMPDIR}/allpermutationssubs.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ALLSUBDOMAIN_PERMUTATIONS${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/allpermutationssubs.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ALLSUBDOMAIN_PERMUTATIONS" "${TMPDIR}/allpermutationssubs.txt"
 }
 
 
@@ -802,38 +705,17 @@ PUREDNS_RESOLVE(){
 	puredns resolve --quiet ${SUBDOMAINDIR}/allpermutationssubs.txt -r ${ROOT_WORDLISTDIR}/resolvers.txt --resolvers-trusted ${ROOT_WORDLISTDIR}/resolvers-trusted.txt --skip-sanitize --skip-validation --skip-wildcard-filter --wildcard-tests ${PUREDNS_WILDCARD_TESTS} -w ${ROOT_SUBDOMAINDIR}/puredns.resolvesubs
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] PUREDNS_RESOLVE${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/puredns.resolvesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
-SHUFFLEDNS(){
-	START_SPINNER "${BGREEN}SHUFFLEDNS${RESET}"
-
-	DOWNLOAD_UPDATED_RESOLVERS
-	shuffledns -silent -l ${SUBDOMAINDIR}/allpermutationssubs.txt -r ${ROOT_WORDLISTDIR}/resolvers.txt -o ${ROOT_SUBDOMAINDIR}/shuffledns.resolvesubs
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] SHUFFLEDNS${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/shuffledns.resolvesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
-MASSDNS(){
-	START_SPINNER "${BGREEN}MASSDNS${RESET}"
-
-	echo -e "I will add later.."
-	massdns -r ${ROOT_WORDLISTDIR}/resolvers.txt -q -t A -o S -w ./$domain/subdomain/all_subdomain.txt ./$domain/ips/massdns.raw
-    cat ./$domain/ips/massdns.raw | grep -a -e ' A ' |  cut -d 'A' -f 2 | tr -d ' ' | anew -q ./$domain/ips/resolved_ips.txt
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] MASSDNS${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/massdns.resolvesubs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "PUREDNS_RESOLVE" "${ROOT_SUBDOMAINDIR}/puredns.resolvesubs"
 }
 
 
 ALLSUBDOMAIN_RESOLVING(){
 	START_SPINNER "${BGREEN}ALLSUBDOMAIN_RESOLVING${RESET}"
 
-	cat ${SUBDOMAINDIR}/*.resolvesubs | unew -el -i -t -q ${SUBDOMAINDIR}/allresolvesubs.txt
+	cat ${TMPDIR}/*.resolvesubs | unew -ef -el -i -t -q ${UNIQUEDOMAINDIR}/allresolvesubs.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ALLSUBDOMAIN_RESOLVING${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/allresolvesubs.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ALLSUBDOMAIN_RESOLVING" "${UNIQUEDOMAINDIR}/allresolvesubs.txt"
 }
 
 
@@ -843,10 +725,10 @@ ALLSUBDOMAIN_RESOLVING(){
 NAABU(){
 	START_SPINNER "${BGREEN}NAABU${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | naabu -duc -silent -c ${NAABU_THREADS} -rate ${NAABU_RATELIMIT} -timeout ${NAABU_TIMEOUT} -retries ${NAABU_RETRIES} -top-ports ${NAABU_PORTS_SCAN} | unewflush -ef -el -i -t -q ${ROOT_SUBDOMAINDIR}/naabu.txt
+	timelimitx -t ${NAABU_TIMELIMITX} "cat ${UNIQUEDOMAINDIR}/allsubs.txt | naabu -duc -silent -c ${NAABU_THREADS} -rate ${NAABU_RATELIMIT} -timeout ${NAABU_TIMEOUT} -retries ${NAABU_RETRIES} -top-ports ${NAABU_PORTS_SCAN} | unewflush -ef -el -i -t -q ${TMPDIR}/naabu.txt"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] NAABU${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/naabu.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "NAABU" "${TMPDIR}/naabu.txt"
 }
 
 
@@ -856,17 +738,15 @@ NAABU(){
 HTTPX(){
 	START_SPINNER "${BGREEN}HTTPX${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/naabu.txt 2>/dev/null | httpx -duc -silent -nc -sc -title -td -cl -ct -t ${HTTPX_THREADS} | unew -el -i -t -q ${ROOT_SUBDOMAINDIR}/httpx.txt
+	cat ${UNIQUEDOMAINDIR}/allsubs.txt ${TMPDIR}/naabu.txt 2>/dev/null | httpx -duc -silent -nc -sc -title -td -cl -ct -t ${HTTPX_THREADS} | unew -el -i -t -q ${TMPDIR}/httpx.txt
 
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | awk '{print $1}' | dlevel --silent --max-level | unew -el -i -t -q ${SUBDOMAINDIR}/alivesubs.txt
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | awk '{print $1}' | sed -e 's/https\?:\/\/\(www\.\)\?//' -e 's/:.*$//' | dlevel --silent --max-level | unew -el -i -t -q ${SUBDOMAINDIR}/withoutprotocolsubs.txt
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | grep -aEi 'IIS|IIS Windows Server|Microsoft-IIS|Windows Server|3CX|phppgadmin|phpmyadmin|jetty|jboss|kibana|grafana|gitlab|kubernetes|citrix|symfony|jira|geoserver|rocketmq|Cisco|Joomla|kafka|pfSense|sonicwall|Jenkins|GlobalProtect|Sentinel|AEM|Airflow|Zimbra|CPanel|cacti|jellyfin|ActiveMQ|phpLDAPadmin' | dlevel --silent --max-level | unew -el -i -t ${ROOT_SUBDOMAINDIR}/interesting_tech_alivesubs.txt | notify -silent -duc -bulk -id ${ALIVESUBDOMAIN_NOTIFY}
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | awk '{print $1}' | grep -aEi '(^|[.-])(admin|administrator|auth|login|signin|sso|oauth|portal|dashboard|panel|cpanel|webmail|mail|exchange|dev|develop|development|test|testing|qa|quality|staging|stage|beta|alpha|demo|sandbox|lab|labs|preprod|pre-prod|prod|production|app|api|backend|frontend|web|secure|internal|intranet|extranet|private|grafana|kibana|prometheus|nagios|zabbix|cacti|splunk|elk|logs|metrics|monitoring|status|health|analytics|git|gitlab|github|bitbucket|svn|jenkins|build|ci|deploy|deployment|pipeline|db|database|mysql|postgres|mongodb|redis|elastic|elasticsearch|sql|phpmyadmin|adminer|support|help|helpdesk|ticket|tickets|service|services|customer|client|crm|vpn|remote|rdp|ssh|ftp|sftp|webvpn|citrix|vmware|horizon|backup|backups|old|legacy|archive|temp|tmp|upload|uploads|file|files)(\.|$)' | dlevel --silent --max-level | unew -el -i -t ${ROOT_SUBDOMAINDIR}/interesting_alivesubs.txt | notify -silent -duc -bulk -id ${ALIVESUBDOMAIN_NOTIFY} &>/dev/null
+	cat ${TMPDIR}/httpx.txt | awk '{print $1}' | dlevel --silent --max-level | unew -el -i -t -q ${TMPDIR}/alivesubs.txt
+	cat ${TMPDIR}/httpx.txt | awk '{print $1}' | sed -e 's/https\?:\/\/\(www\.\)\?//' -e 's/:.*$//' | dlevel --silent --max-level | unew -el -i -t -q ${TMPDIR}/withoutprotocolsubs.txt
+	cat ${TMPDIR}/httpx.txt | grep -aEi 'IIS|IIS Windows Server|Microsoft-IIS|Windows Server|3CX|phppgadmin|phpmyadmin|jetty|jboss|kibana|grafana|gitlab|kubernetes|citrix|symfony|jira|geoserver|rocketmq|Cisco|Joomla|kafka|pfSense|sonicwall|Jenkins|GlobalProtect|Sentinel|AEM|Airflow|Zimbra|CPanel|cacti|jellyfin|ActiveMQ|phpLDAPadmin' | dlevel --silent --max-level | unew -el -i -t ${TMPDIR}/interesting_tech_alivesubs.txt | notify -silent -duc -bulk -id ${ALIVESUBDOMAIN_NOTIFY}
+	cat ${TMPDIR}/httpx.txt | awk '{print $1}' | grep -aEi '(^|[.-])(admin|administrator|auth|login|signin|sso|oauth|portal|dashboard|panel|cpanel|webmail|mail|exchange|dev|develop|development|test|testing|qa|quality|staging|stage|beta|alpha|demo|sandbox|lab|labs|preprod|pre-prod|prod|production|app|api|backend|frontend|web|secure|internal|intranet|extranet|private|grafana|kibana|prometheus|nagios|zabbix|cacti|splunk|elk|logs|metrics|monitoring|status|health|analytics|git|gitlab|github|bitbucket|svn|jenkins|build|ci|deploy|deployment|pipeline|db|database|mysql|postgres|mongodb|redis|elastic|elasticsearch|sql|phpmyadmin|adminer|support|help|helpdesk|ticket|tickets|service|services|customer|client|crm|vpn|remote|rdp|ssh|ftp|sftp|webvpn|citrix|vmware|horizon|backup|backups|old|legacy|archive|temp|tmp|upload|uploads|file|files)(\.|$)' | dlevel --silent --max-level | unew -el -i -t ${TMPDIR}/interesting_alivesubs.txt | notify -silent -duc -bulk -id ${ALIVESUBDOMAIN_NOTIFY} &>/dev/null
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] HTTPX${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/httpx.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-	echo -e "${BGREEN}[+] HTTPX${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/interesting_tech_alivesubs.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-	echo -e "${BGREEN}[+] HTTPX${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/interesting_alivesubs.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "HTTPX" "${TMPDIR}/httpx.txt"
 }
 
 
@@ -918,45 +798,7 @@ FFUFBRUTE(){
 	cat ${FFUFBRUTE}/httpx.txt | awk '{print $1}' | sed -e 's/https\?:\/\/\(www\.\)\?//' -e 's/:.*$//' | dlevel --silent --max-level | unew -el -i -t ${SUBDOMAINDIR}/withoutprotocolsubs.txt | unew -el -i -t -q ${FFUFBRUTE}/withoutprotocolsubs.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] FFUFBRUTE${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/ffuf.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
-
-###############################################################################################################
-####################################### VHOST DISCOVERY ######################################################
-###############################################################################################################
-FFUFVHOST(){
-	START_SPINNER "${BGREEN}FFUFBRUTE${RESET}"
-
-	# https://x.com/rez0__/status/1254588390114287617
-	# https://x.com/nytr0gen_/status/1255029541321551872
-
-	# cat ips.txt
-	https://139.59.188.40
-	https://34.107.205.1
-
-	# vhost_wordlist.txt
-	z
-	zeus
-	app-dev
-	api
-	app-api
-	app-admin
-	store
-	stores
-	admin
-
-	# subs.txt
-	boggs.ctfio.com
-	public.sqrx.com
-
-
-	ffuf -c -w ips.txt:IP -w subs.txt:FUZZ -u IP -H "Host: FUZZ"
-	ffuf -c -w ips.txt:IP -w vhost_wordlist.txt:FUZZ -u IP -H "Host: FUZZ.boggs.ctfio.com" -mc 200,301,302
-	ffuf -c -w ips.txt:IP -w vhost_wordlist.txt:FUZZ -w subs.txt:DOMAIN -u IP -H "Host: FUZZ.DOMAIN" -mc 200,301,302
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] FFUFBRUTE${RESET}: $(wc -l 2>/dev/null < ${SUBDOMAINDIR}/ffuf.subs || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "FFUFBRUTE" "${SUBDOMAINDIR}/ffuf.subs"
 }
 
 
@@ -966,32 +808,10 @@ FFUFVHOST(){
 FAVINFO(){
 	START_SPINNER "${BGREEN}FAVINFO${RESET}"
 
-	timelimitx -t ${FAVINFO_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | favinfo --silent --timeout 30s --json | unew -q -a ${FAVICON_HASH}/favinfo.json"
+	timelimitx -t ${FAVINFO_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | favinfo --silent --timeout 30s --json | unew -q -a ${FAVICON_HASH}/favinfo.json"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] FAVINFO${RESET}: $(wc -l 2>/dev/null < ${FAVICON_HASH}/favinfo.json || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
-
-###############################################################################################################
-####################################### SCREENSHOTTING #######################################################
-###############################################################################################################
-GOWITNESS(){
-	START_SPINNER "${BGREEN}GOWITNESS${RESET}"
-
-	if [ "$MODE" = "NORMAL" ]; then
-		cat ${SUBDOMAINDIR}/alivesubs.txt | gowitness scan file -f - --screenshot-fullpage --delay $GOWITNESS_DELAY --timeout $GOWITNESS_TIMEOUT --threads $GOWITNESS_THREADS --save-content --write-db --screenshot-skip-save --write-screenshots
-	fi
-
-	if [ "$MODE" = "ADVANCED" ]; then
-		# Taking Screenshot of urls instead of domain reveals more vuln like IIS, Swagger UI
-		cat ${SUBDOMAINDIR}/urls.txt | gowitness scan file -f - --screenshot-fullpage --delay $GOWITNESS_DELAY --timeout $GOWITNESS_TIMEOUT --threads $GOWITNESS_THREADS --save-content --write-db --screenshot-skip-save --write-screenshots
-		
-		# extract all network logs in gowitness.sqlite3
-	fi
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] GOWITNESS${RESET}: $(wc -l 2>/dev/null < ${SCREENSHOTS}/naabu.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "FAVINFO" "${FAVICON_HASH}/favinfo.json"
 }
 
 
@@ -1001,227 +821,202 @@ GOWITNESS(){
 FFUFDIRENUM(){
 	START_SPINNER "${BGREEN}FFUFDIRENUM${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | awk -F' ' '{ if ($2 == "[403]" || $2 == "[404]" || $2 == "[302]") print $1 }' | unew -el -i -t -q notaccessible_subs.txt
-	cat notaccessible_subs.txt | interlace --silent -threads ${INTERLACE_THREADS} -c "ffuf -s -u _target_/FUZZ -w wordlists/onelistforallshort.txt -mc ${FFUFDIRENUM_STATUS_MATCH} -o _output_/_cleantarget_.json" -o ${SUBDOMAINDIR}/ffufdirenum
+	cat ${TMPDIR}/httpx.txt | awk -F' ' '{ if ($2 == "[403]" || $2 == "[404]" || $2 == "[302]") print $1 }' | unew -ef -el -i -t -q ${TMPDIR}/notaccessible_subs.txt
+	cat ${TMPDIR}/notaccessible_subs.txt | interlace -silent -threads ${INTERLACE_THREADS} -c "ffuf -s -u _target_/FUZZ -w wordlists/onelistforallshort.txt -mc ${FFUFDIRENUM_STATUS_MATCH} -o _output_/_cleantarget_.json" -o ${TMPDIR}/ffufdirenum.json
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] FFUFDIRENUM${RESET}: $(wc -l 2>/dev/null < ${ROOT_SUBDOMAINDIR}/naabu.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "FFUFDIRENUM" "${TMPDIR}/ffufdirenum.json"
 }
 
 
 ###############################################################################################################
 ####################################### EMAIL ENUMERATION ####################################################
 ###############################################################################################################
-EMAILFINDER(){
-	START_SPINNER "${BGREEN}EMAILFINDER${RESET}"
-
-	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | emailfinder saved | unew -el -i -t -q ${ROOT_EMAILSDIR}/emailfinder.emails
-	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | emailfinder skymem | unew -el -i -t -q ${ROOT_EMAILSDIR}/emailfinder.emails
-	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | emailfinder google -e | unew -el -i -t -q ${ROOT_EMAILSDIR}/emailfinder.emails
-	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | emailfinder bing -e | unew -el -i -t -q ${ROOT_EMAILSDIR}/emailfinder.emails
-	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | emailfinder duckduckgo -e | unew -el -i -t -q ${ROOT_EMAILSDIR}/emailfinder.emails
-	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | emailfinder yahoo -e | unew -el -i -t -q ${ROOT_EMAILSDIR}/emailfinder.emails
-	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | emailfinder yandex -e | unew -el -i -t -q ${ROOT_EMAILSDIR}/emailfinder.emails
-
-	STOP_SPINNER
-	echo -e "${BGREEN}[+] EMAILFINDER${RESET}: $(wc -l 2>/dev/null < ${ROOT_EMAILSDIR}/emailfinder.emails || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-}
-
 EMAILEXTRACTOR(){
 	START_SPINNER "${BGREEN}EMAILEXTRACTOR${RESET}"
 
-	if [ "$XSS_SCAN_MODE" = "NORMAL" ]; then
-		echo "$TARGET" | httpx -duc -silent -nc | emailextractor -silent | grep "::" | cut -d":" -f4 | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g" | unew -i ${ROOT_EMAILSDIR}/emailfinder.emails
-	fi
-
-	if [ "$XSS_SCAN_MODE" = "ADVANCED" ]; then
-		cat ${SUBDOMAINDIR}/alivesubs.txt | emailextractor -silent | grep "::" | cut -d":" -f4 | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g" | unew -i ${ROOT_EMAILSDIR}/emailfinder.emails
-	fi
+	timelimitx -t ${EMAILEXTRACTOR_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | emailextractor -silent -c 30 -t 30 -no-chromedp -json | jq -r '.emails[].email' | unew -i -el -ef -q ${TMPDIR}/emailextractor.emails"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] EMAILEXTRACTOR${RESET}: $(wc -l 2>/dev/null < ${ROOT_EMAILSDIR}/emailfinder.emails || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "EMAILEXTRACTOR" "${TMPDIR}/emailextractor.emails"
 }
-
-
 ###############################################################################################################
 ####################################### URL CRAWLING #########################################################
 ###############################################################################################################
 WAYMORE(){
 	START_SPINNER "${BGREEN}WAYMORE${RESET}"
 
-	timelimitx -t ${WAYMORE_TIMELIMITX} "echo ${TARGET} | waymore -mode U -lr 3 -lcc 3 -f | unew -el -i -t -q ${URLSDIR}/waymore.urls"
+	timelimitx -t ${WAYMORE_TIMELIMITX} "echo ${TARGET} | waymore -mode U -lr 3 -lcc 3 -f >/dev/null 2>&1 | unew -el -i -t -q ${TMPDIR}/waymore.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] WAYMORE${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/waymore.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "WAYMORE" "${TMPDIR}/waymore.urls"
 }
 
 HAKRAWLER(){
 	START_SPINNER "${BGREEN}HAKRAWLER${RESET}"
 
-	timelimitx -t ${HAKRAWLER_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | hakrawler -insecure -t ${HAKRAWLER_THREADS} -timeout ${HAKRAWLER_TIMEOUT} -d ${HAKRAWLER_DEPTH} | unew -el -i -t -q ${URLSDIR}/hakrawler.urls"
+	timelimitx -t ${HAKRAWLER_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | hakrawler -insecure -t ${HAKRAWLER_THREADS} -timeout ${HAKRAWLER_TIMEOUT} -d ${HAKRAWLER_DEPTH} | unew -el -i -t -q ${TMPDIR}/hakrawler.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] HAKRAWLER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/hakrawler.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "HAKRAWLER" "${TMPDIR}/hakrawler.urls"
 }
 
 WAYBACKURLS(){
 	START_SPINNER "${BGREEN}WAYBACKURLS${RESET}"
 
-	timelimitx -t ${WAYBACKURLS_TIMELIMITX} "echo ${TARGET} | waybackurls | unew -el -i -t -q ${URLSDIR}/waybackurls.urls"
+	timelimitx -t ${WAYBACKURLS_TIMELIMITX} "echo ${TARGET} | waybackurls | unew -el -i -t -q ${TMPDIR}/waybackurls.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] WAYBACKURLS${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/waybackurls.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "WAYBACKURLS" "${TMPDIR}/waybackurls.urls"
 }
 
 KATANA(){
 	START_SPINNER "${BGREEN}KATANA${RESET}"
 
-	timelimitx -t ${KATANA_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | katana -duc -silent -nc -ps -jc -kf -fx -xhr -concurrency ${KATANA_THREADS} -parallelism ${KATANA_PARALLELISM} -depth ${KATANA_DEPTH} -timeout ${KATANA_TIMEOUT} ${KATANA_RETRY} -delay ${KATANA_DELAY} -rate-limit ${KATANA_RATELIMIT} -crawl-duration ${KATANA_CRAWLDURATION} | unew -el -i -t -q ${URLSDIR}/katana.urls"
+	timelimitx -t ${KATANA_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | katana -duc -silent -nc -ps -jc -kf -fx -xhr -concurrency ${KATANA_THREADS} -parallelism ${KATANA_PARALLELISM} -depth ${KATANA_DEPTH} -timeout ${KATANA_TIMEOUT} ${KATANA_RETRY} -delay ${KATANA_DELAY} -rate-limit ${KATANA_RATELIMIT} -crawl-duration ${KATANA_CRAWLDURATION} | unew -el -i -t -q ${TMPDIR}/katana.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] KATANA${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/katana.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "KATANA" "${TMPDIR}/katana.urls"
 }
 
 GAU(){
 	START_SPINNER "${BGREEN}GAU${RESET}"
 
-	timelimitx -t ${GAU_TIMELIMITX} "echo ${TARGET} | gau --threads ${GAU_THREADS} --timeout ${GAU_TIMEOUT} --retries ${GAU_RETRIES} | unew -el -i -t -q ${URLSDIR}/gau.urls"
+	timelimitx -t ${GAU_TIMELIMITX} "echo ${TARGET} | gau --threads ${GAU_THREADS} --timeout ${GAU_TIMEOUT} --retries ${GAU_RETRIES} >/dev/null 2>&1 | unew -el -i -t -q ${TMPDIR}/gau.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] GAU${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/gau.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "GAU" "${TMPDIR}/gau.urls"
 }
 
 GOSPIDER(){
 	START_SPINNER "${BGREEN}GOSPIDER${RESET}"
 
-	gospider -S ${SUBDOMAINDIR}/withoutprotocolsubs.txt -q --js --robots --sitemap -a -w -r --threads ${GOSPIDER_THREADS} --concurrent ${GOSPIDER_CONCURRENT} --depth ${GOSPIDER_DEPTH} --delay ${GOSPIDER_DELAY} --timeout ${GOSPIDER_TIMEOUT} | unew -el -i -t -q ${URLSDIR}/gospider.urls
+	gospider -S ${TMPDIR}/withoutprotocolsubs.txt -q --js --robots --sitemap -a -w -r --threads ${GOSPIDER_THREADS} --concurrent ${GOSPIDER_CONCURRENT} --depth ${GOSPIDER_DEPTH} --delay ${GOSPIDER_DELAY} --timeout ${GOSPIDER_TIMEOUT} | unew -el -i -t -q ${TMPDIR}/gospider.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] GOSPIDER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/gospider.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "GOSPIDER" "${TMPDIR}/gospider.urls"
 }
 
 UFORALL(){
 	START_SPINNER "${BGREEN}UFORALL${RESET}"
 
-	timelimitx -t ${UFORALL_TIMELIMITX} "echo ${TARGET} | uforall -silent -t all | unew -el -i -t -q ${URLSDIR}/uforall.urls"
+	timelimitx -t ${UFORALL_TIMELIMITX} "echo ${TARGET} | uforall -silent -t all | unew -el -i -t -q ${TMPDIR}/uforall.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] UFORALL${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/uforall.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "UFORALL" "${TMPDIR}/uforall.urls"
 }
 
 CARIDDI(){
 	START_SPINNER "${BGREEN}CARIDDI${RESET}"
 
-	timelimitx -t ${CARIDDI_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | interlace --silent -threads ${INTERLACE_CARIDDI_THREADS} -c \"echo _target_ | cariddi -c $CARIDDI_CONCURRENCY -d $CARIDDI_DELAY -t $CARIDDI_TIMEOUT -rua > _output_/_cleantarget_.urls\" -o ${CARIDDIDIR}"
-	cat ${CARIDDIDIR}/*.urls | unew -el -t -q ${URLSDIR}/cariddi.urls
+	timelimitx -t ${CARIDDI_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | interlace --silent -threads ${INTERLACE_CARIDDI_THREADS} -c \"echo _target_ | cariddi -c $CARIDDI_CONCURRENCY -d $CARIDDI_DELAY -t $CARIDDI_TIMEOUT -rua > _output_/_cleantarget_.urls\" -o ${CARIDDIDIR}"
+	cat ${CARIDDIDIR}/*.urls | unew -el -t -q ${TMPDIR}/cariddi.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] CARIDDI${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/cariddi.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "CARIDDI" "${TMPDIR}/cariddi.urls"
 }
 
 URLFINDER(){
 	START_SPINNER "${BGREEN}URLFINDER${RESET}"
 
-	timelimitx -t ${URLFINDER_TIMELIMITX} "echo ${TARGET} | urlfinder -silent -nc -all -config ~/.config/urlfinder/config.yaml -pc ~/.config/urlfinder/provider-config.yaml -timeout ${URLFINDER_TIMEOUT} | unew -el -i -t -q ${URLSDIR}/urlfinder.urls"
+	timelimitx -t ${URLFINDER_TIMELIMITX} "echo ${TARGET} | urlfinder -silent -nc -all -config ~/.config/urlfinder/config.yaml -pc ~/.config/urlfinder/provider-config.yaml -timeout ${URLFINDER_TIMEOUT} | unew -el -i -t -q ${TMPDIR}/urlfinder.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] URLFINDER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/urlfinder.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "URLFINDER" "${TMPDIR}/urlfinder.urls"
 }
 
 GITHUB_ENDPOINTS(){
 	START_SPINNER "${BGREEN}GITHUB_ENDPOINTS${RESET}"
 
     # Run the commands if the file has content
-	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | interlace --silent -threads ${INTERLACE_GITHUB_ENDPOINTS_THREADS} -c "github-endpoints -d _target_ -k -raw -t ~/.config/github-endpoints/.github_tokens -o _output_/_cleantarget_.urls" -o ${GITHUB_ENDPOINTSDIR}
-	cat ${GITHUB_ENDPOINTSDIR}/*.urls | unew -el -t -q ${URLSDIR}/github-endpoints.urls
+	cat ${SUBDOMAINDIR}/withoutprotocolsubs.txt | interlace --silent -threads ${INTERLACE_GITHUB_ENDPOINTS_THREADS} -c "github-endpoints -d _target_ -k -raw -t ~/.config/github-endpoints/.github_tokens -o _output_/_cleantarget_.urls" -o ${TMPDIR}
+	cat ${TMPDIR}/*.urls | unew -el -t -q ${TMPDIR}/github-endpoints.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] GITHUB_ENDPOINTS${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/github-endpoints.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "GITHUB_ENDPOINTS" "${TMPDIR}/github-endpoints.urls"
 }
 
 XURLFIND3R(){
 	START_SPINNER "${BGREEN}XURLFIND3R${RESET}"
 
-	timelimitx -t ${XURLFIND3R_TIMELIMITX} "echo ${TARGET} | xurlfind3r --silent --include-subdomains | unew -el -t -q ${URLSDIR}/xurlfind3r.urls"
+	timelimitx -t ${XURLFIND3R_TIMELIMITX} "echo ${TARGET} | xurlfind3r --silent --include-subdomains | unew -el -t -q ${TMPDIR}/xurlfind3r.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] XURLFIND3R${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/xurlfind3r.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "XURLFIND3R" "${TMPDIR}/xurlfind3r.urls"
 }
 
 XCRAWL3R(){
 	START_SPINNER "${BGREEN}XCRAWL3R${RESET}"
 
-	timelimitx -t ${XCRAWL3R_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | interlace --silent -threads ${INTERLACE_XCRAWL3R_THREADS} -c \"xcrawl3r --silent --monochrome -u _target_ --depth $XCRAWL3R_DEPTH --timeout $XCRAWL3R_TIMEOUT --concurrency $XCRAWL3R_CONCURRENCY --delay $XCRAWL3R_DELAY --parallelism $XCRAWL3R_PARALLELISM --include-subdomains > _output_/_cleantarget_.urls\" -o ${XCRAWL3RDIR}"
-	cat ${XCRAWL3RDIR}/*.urls | unew -el -t -q ${URLSDIR}/xcrawl3r.urls
+	timelimitx -t ${XCRAWL3R_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | interlace --silent -threads ${INTERLACE_XCRAWL3R_THREADS} -c \"xcrawl3r --silent --monochrome -u _target_ --depth $XCRAWL3R_DEPTH --timeout $XCRAWL3R_TIMEOUT --concurrency $XCRAWL3R_CONCURRENCY --delay $XCRAWL3R_DELAY --parallelism $XCRAWL3R_PARALLELISM --include-subdomains > _output_/_cleantarget_.urls\" -o ${TMPDIR}"
+	cat ${TMPDIR}/*.urls | unew -el -t -q ${TMPDIR}/xcrawl3r.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] XCRAWL3R${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/xcrawl3r.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "XCRAWL3R" "${TMPDIR}/xcrawl3r.urls"
 }
 
 CRAWLEY(){
 	START_SPINNER "${BGREEN}CRAWLEY${RESET}"
 
-	timelimitx -t ${CRAWLEY_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | interlace --silent -threads ${INTERLACE_CRAWLEY_THREADS} -c \"crawley -silent -all -brute -delay ${CRAWLEY_DELAY} -skip-ssl -js -robots crawl -depth ${CRAWLEY_DEPTH} -timeout ${CRAWLEY_TIMEOUT} -workers ${CRAWLEY_WORKERS} _target_ > _output_/_cleantarget_.urls\" -o ${CRAWLEYDIR}"
-	cat ${CRAWLEYDIR}/*.urls | unew -el -t -q ${URLSDIR}/crawley.urls
+	timelimitx -t ${CRAWLEY_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | interlace --silent -threads ${INTERLACE_CRAWLEY_THREADS} -c \"crawley -silent -all -brute -delay ${CRAWLEY_DELAY} -skip-ssl -js -robots crawl -depth ${CRAWLEY_DEPTH} -timeout ${CRAWLEY_TIMEOUT} -workers ${CRAWLEY_WORKERS} _target_ > _output_/_cleantarget_.urls\" -o ${TMPDIR}"
+	cat ${TMPDIR}/*.urls | unew -el -t -q ${TMPDIR}/crawley.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] CRAWLEY${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/crawley.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "CRAWLEY" "${TMPDIR}/crawley.urls"
 }
 
 GOLINKFINDER(){
 	START_SPINNER "${BGREEN}GOLINKFINDER${RESET}"
 
     # Run the commands if the file has content
-	cat ${SUBDOMAINDIR}/alivesubs.txt | interlace --silent -threads ${INTERLACE_GOLINKFINDER} -c "GoLinkFinder --silent -d _target_ --complete-url --concurrency ${GOLINKFINDER_CONCURRENCY} --delay ${GOLINKFINDER_DELAY} --timeout ${GOLINKFINDER_TIMEOUT} > _output_/_cleantarget_.urls" -o ${GOLINKFINDERDIR}
-	cat ${GOLINKFINDERDIR}/*.urls | unew -el -t -q ${URLSDIR}/GoLinkFinder.urls
+	cat ${TMPDIR}/alivesubs.txt | interlace --silent -threads ${INTERLACE_GOLINKFINDER} -c "GoLinkFinder --silent -d _target_ --complete-url --concurrency ${GOLINKFINDER_CONCURRENCY} --delay ${GOLINKFINDER_DELAY} --timeout ${GOLINKFINDER_TIMEOUT} > _output_/_cleantarget_.urls" -o ${TMPDIR}
+	cat ${TMPDIR}/*.urls | unew -el -t -q ${TMPDIR}/GoLinkFinder.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] GOLINKFINDER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/GoLinkFinder.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "GOLINKFINDER" "${TMPDIR}/GoLinkFinder.urls"
 }
 
 GOURLEX(){
 	START_SPINNER "${BGREEN}GOURLEX${RESET}"
 
-	cat ${SUBDOMAINDIR}/alivesubs.txt | interlace --silent -threads 10 -c "gourlex -t _target_ -uO -s > _output_/_cleantarget_.txt" -o ${GOURLEX}
-	cat ${GOURLEX}/*.txt | unew -el -t -q ${URLSDIR}/gourlex.urls
+	cat ${TMPDIR}/alivesubs.txt | interlace --silent -threads 10 -c "gourlex -t _target_ -uO -s > _output_/_cleantarget_.txt" -o ${TMPDIR}
+	cat ${TMPDIR}/*.txt | unew -el -t -q ${TMPDIR}/gourlex.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] GOURLEX${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/gourlex.urls|| echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "GOURLEX" "${TMPDIR}/gourlex.urls"
 }
 
 PATHFINDER(){
 	START_SPINNER "${BGREEN}PATHFINDER${RESET}"
 
 	if [ "$PATHFINDER_SCAN_MODE" = "NORMAL" ]; then
-		for target in $(cat alivesubs.txt);do pathfinder -u $target --threads 25 --with-assets;done | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -el -t -q ${URLSDIR}/pathfinder.urls
+		for target in $(cat ${TMPDIR}/alivesubs.txt);do pathfinder -u $target --threads 25 --with-assets;done | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -el -t -q ${TMPDIR}/pathfinder.urls
 	fi
 
 	if [ "$PATHFINDER_SCAN_MODE" = "ADVANCED" ]; then
-		for target in $(cat alivesubs.txt);do pathfinder -u $target --threads 25 --with-assets;done | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -el -t -q ${URLSDIR}/pathfinder.urls
-
-		timelimitx -t 5m bash pathfinder-advanced.sh testphp.vulnweb.com
+		for target in $(cat ${TMPDIR}/alivesubs.txt);do pathfinder -u $target --threads 25 --with-assets;done | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -el -t -q ${TMPDIR}/pathfinder.urls
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] PATHFINDER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/pathfinder.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "PATHFINDER" "${TMPDIR}/pathfinder.urls"
 }
 
 PATHCRAWLER(){
 	START_SPINNER "${BGREEN}PATHCRAWLER${RESET}"
 
-	cat ${SUBDOMAINDIR}/alivesubs.txt | pathcrawler -silent -complete-url -concurrent $PATHCRAWLER_CONCURRENT -delay $PATHCRAWLER_DELAY -timeout $PATHCRAWLER_TIMEOUT | unew -el -t -q ${URLSDIR}/pathcrawler.urls
+	cat ${TMPDIR}/alivesubs.txt | pathcrawler -silent -complete-url -concurrent $PATHCRAWLER_CONCURRENT -delay $PATHCRAWLER_DELAY -timeout $PATHCRAWLER_TIMEOUT | unew -el -t -q ${TMPDIR}/pathcrawler.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] PATHCRAWLER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/pathcrawler.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "PATHCRAWLER" "${TMPDIR}/pathcrawler.urls"
 }
 
 ROBOTXT(){
 	START_SPINNER "${BGREEN}ROBOTXT${RESET}"
 
-	timelimitx -t ${ROBOTXT_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | robotxt -silent -complete -delay $ROBOTXT_DELAY -timeout $ROBOTXT_TIMEOUT | sed 's/^\Disallow: //' | sed 's/^\Allow: //' | unew -el -t -q ${URLSDIR}/robotxt.urls"
+	timelimitx -t ${ROBOTXT_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | robotxt -silent -complete -delay $ROBOTXT_DELAY -timeout $ROBOTXT_TIMEOUT | sed 's/^\Disallow: //' | sed 's/^\Allow: //' | unew -el -t -q ${TMPDIR}/robotxt.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ROBOTXT${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/robotxt.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ROBOTXT" "${TMPDIR}/robotxt.urls"
 }
 
 ###############################################################################################################
@@ -1230,63 +1025,63 @@ ROBOTXT(){
 SUBJS(){
 	START_SPINNER "${BGREEN}SUBJS${RESET}"
 
-	timelimitx -t ${SUBJS_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | subjs | unew -el -i -t -q ${URLSDIR}/subjs.urls"
+	timelimitx -t ${SUBJS_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | subjs | unew -el -i -t -q ${TMPDIR}/subjs.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SUBJS${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/subjs.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SUBJS" "${TMPDIR}/subjs.urls"
 }
 
 JSCRAWLER(){
 	START_SPINNER "${BGREEN}JSCRAWLER${RESET}"
 
-	timelimitx -t ${JSCRAWLER_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | jscrawler --silent --complete --timeout 15 --threads 50 | egrep -av '\(' | sed 's/\\$//' | unew -el -i -t -q ${URLSDIR}/jscrawler.urls"
+	timelimitx -t ${JSCRAWLER_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | jscrawler --silent --complete --timeout 15 --threads 50 | egrep -av '\(' | sed 's/\\$//' | unew -el -i -t -q ${TMPDIR}/jscrawler.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] JSCRAWLER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/jscrawler.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "JSCRAWLER" "${TMPDIR}/jscrawler.urls"
 }
 
 JSFINDER(){
 	START_SPINNER "${BGREEN}JSFINDER${RESET}"
 
-	timelimitx -t ${JSFINDER_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | jsfinder -s -read -c 20 -o ${URLSDIR}/jsfinder.urls"
+	timelimitx -t ${JSFINDER_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | jsfinder -s -read -c 20 -o ${TMPDIR}/jsfinder.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] JSFINDER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/jsfinder.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "JSFINDER" "${TMPDIR}/jsfinder.urls"
 }
 
 XNLINKFINDER(){
 	START_SPINNER "${BGREEN}XNLINKFINDER${RESET}"
 
-	timelimitx -t ${XNLINKFINDER_TIMELIMITX} "cat ${SUBDOMAINDIR}/alivesubs.txt | xnLinkFinder --no-banner --scope-prefix ${SUBDOMAINDIR}/alivesubs.txt --scope-filter ${TARGET} --depth 3 --timeout 10 --max-time-limit 60 -o ${URLSDIR}/xnLinkFinder.urls -op ${URLSDIR}/xnLinkFinder.params"
+	timelimitx -t ${XNLINKFINDER_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | xnLinkFinder --no-banner --scope-prefix ${TMPDIR}/alivesubs.txt --scope-filter ${TARGET} --depth 3 --timeout 10 --max-time-limit 60 -o ${TMPDIR}/xnLinkFinder.urls -op ${TMPDIR}/xnLinkFinder.params"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] XNLINKFINDER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/xnLinkFinder.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "XNLINKFINDER" "${TMPDIR}/xnLinkFinder.urls"
 }
 
 SOURCEMAPPER(){
 	START_SPINNER "${BGREEN}SOURCEMAPPER${RESET}"
 
-	cat ${URLSDIR}/*.urls | grep -a "\.js$" | sed 's/\.js$/.js.map/' | unew -el -t -q ${URLSDIR}/jsmaplinks.txt
-	cat ${URLSDIR}/*.urls | grep -a "\.js.map$" | unew -el -t -q ${URLSDIR}/jsmaplinks.txt
+	cat ${TMPDIR}/*.urls | grep -a "\.js$" | sed 's/\.js$/.js.map/' | unew -el -t -q ${TMPDIR}/jsmaplinks.txt
+	cat ${TMPDIR}/*.urls | grep -a "\.js.map$" | unew -el -t -q ${TMPDIR}/jsmaplinks.txt
 
     # Run the commands if the file has content
-	cat ${URLSDIR}/jsmaplinks.txt | interlace --silent -threads 10 -c "sourcemapper -insecure -url _target_ -output _output_/_cleantarget_" -o ${SOURCEMAPPERDIR}
-	# cat ${SOURCEMAPPERDIR}/*.urls | unew -el -t -q ${URLSDIR}/sourcemapper.urls
+	cat ${TMPDIR}/jsmaplinks.txt | interlace --silent -threads 10 -c "sourcemapper -insecure -url _target_ -output _output_/_cleantarget_" -o ${TMPDIR}
+	# cat ${TMPDIR}/*.urls | unew -el -t -q ${TMPDIR}/sourcemapper.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SOURCEMAPPER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/sourcemapper.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SOURCEMAPPER" "${TMPDIR}/sourcemapper.urls"
 }
 
 JSLUICE(){
 	START_SPINNER "${BGREEN}JSLUICE${RESET}"
 
-	cat ${URLSDIR}/*.urls | grep -a "\.js$" | unew -el -i -t -q ${URLSDIR}/jsluice_jslinks.txt
-	cat ${URLSDIR}/jsluice_jslinks.txt | jsluice urls --no-check-certificate --concurrency 5 | unew -a -q ${URLSDIR}/jsluice_urls.txt
+	cat ${TMPDIR}/*.urls | grep -a "\.js$" | unew -el -i -t -q ${TMPDIR}/jsluice_jslinks.txt
+	cat ${TMPDIR}/jsluice_jslinks.txt | jsluice urls --no-check-certificate --concurrency 5 | unew -a -q ${TMPDIR}/jsluice_urls.txt
 
-	# cat ${URLSDIR}/jsluice_urls.txt | filteroutput | unew -el -i -t -q ${URLSDIR}/jsluice.urls
+	# cat ${TMPDIR}/jsluice_urls.txt | filteroutput | unew -el -i -t -q ${TMPDIR}/jsluice.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] JSLUICE${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/jsluice.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "JSLUICE" "${TMPDIR}/jsluice.urls"
 }
 
 
@@ -1297,68 +1092,68 @@ PARAMFINDER(){
 	START_SPINNER "${BGREEN}PARAMFINDER${RESET}"
 
 	if [ "$PARAMFINDER_SCAN_MODE" = "NORMAL" ]; then
-		cat ${URLSDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx|html)$' | egrep -av "=" | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
+		cat ${TMPDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx|html)$' | egrep -av "=" | unew -el -t -q ${TMPDIR}/paramfinderlinks.txt
 	fi
 
 	if [ "$PARAMFINDER_SCAN_MODE" = "ADVANCED" ]; then
-		cat ${ROOT_SUBDOMAINDIR}/allsubs.txt | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-4 | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-5 | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-6 | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
-		cat ${URLSDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx|html)$' | egrep -av "=" | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
+		cat ${TMPDIR}/allsubs.txt | unew -el -t -q ${TMPDIR}/paramfinderlinks.txt
+		cat ${TMPDIR}/allurls.txt | cut -d"/" -f1-4 | unew -el -t -q ${TMPDIR}/paramfinderlinks.txt
+		cat ${TMPDIR}/allurls.txt | cut -d"/" -f1-5 | unew -el -t -q ${TMPDIR}/paramfinderlinks.txt
+		cat ${TMPDIR}/allurls.txt | cut -d"/" -f1-6 | unew -el -t -q ${TMPDIR}/paramfinderlinks.txt
+		cat ${TMPDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx|html)$' | egrep -av "=" | unew -el -t -q ${TMPDIR}/paramfinderlinks.txt
 	fi
 
 	# Common steps for both TRUE and FALSE conditions
-	timelimitx -t ${PARAMFINDER_TIMELIMITX} "cat ${URLSDIR}/paramfinderlinks.txt | paramfinder --silent --insecure -c ${PARAMFINDER_THREADS} --timeout ${PARAMFINDER_TIMEOUT} | grep 'TRANSFORM_URL:' | sed 's/^TRANSFORM_URL: //' | unew -el -i -t -q ${URLSDIR}/paramfinder.urls"
+	timelimitx -t ${PARAMFINDER_TIMELIMITX} "cat ${TMPDIR}/paramfinderlinks.txt | paramfinder --silent --insecure -c ${PARAMFINDER_THREADS} --timeout ${PARAMFINDER_TIMEOUT} | grep 'TRANSFORM_URL:' | sed 's/^TRANSFORM_URL: //' | unew -el -i -t -q ${TMPDIR}/paramfinder.urls"
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] PARAMFINDER${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/paramfinder.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "PARAMFINDER" "${TMPDIR}/paramfinder.urls"
 }
 
 MSARJUN(){
 	START_SPINNER "${BGREEN}MSARJUN${RESET}"
 
-	cat ${URLSDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx)$' | egrep -av "=" | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
-	timelimitx -t ${MSARJUN_TIMELIMITX} "cat ${URLSDIR}/paramfinderlinks.txt | msarjun --silent -m GET,POST,XML,JSON --concurrency 10 --json --append-output ${URLSDIR}/msarjun.json" 2>/dev/null
-	cat ${URLSDIR}/msarjun.json | jq -r '.transformed_url' | unew -el -t -q ${URLSDIR}/msarjun.urls
+	cat ${TMPDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx)$' | egrep -av "=" | unew -el -t -q ${TMPDIR}/paramfinderlinks.txt
+	timelimitx -t ${MSARJUN_TIMELIMITX} "cat ${TMPDIR}/paramfinderlinks.txt | msarjun --silent -m GET,POST,XML,JSON --concurrency 10 --json --append-output ${TMPDIR}/msarjun.json" 2>/dev/null
+	cat ${TMPDIR}/msarjun.json | jq -r '.transformed_url' | unew -el -t -q ${TMPDIR}/msarjun.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] MSARJUN${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/msarjun.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "MSARJUN" "${TMPDIR}/msarjun.urls"
 }
 
 X8(){
 	START_SPINNER "${BGREEN}X8${RESET}"
 
-	cat ${URLSDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx)$' | egrep -av "=" | unew -el -t -q ${URLSDIR}/paramfinderlinks.txt
+	cat ${TMPDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | grep -aE '\.(php|jsp|jspa|asp|aspx)$' | egrep -av "=" | unew -el -t -q ${TMPDIR}/paramfinderlinks.txt
 
-	timelimitx -t ${X8_TIMELIMITX} "cat ${URLSDIR}/paramfinderlinks.txt | interlace --silent -threads 1 -c \"x8 -u _target_ -X GET POST XML JSON --disable-progress-bar --output-format json --append --output _output_/x8.json\" -o ${URLSDIR}"
+	timelimitx -t ${X8_TIMELIMITX} "cat ${TMPDIR}/paramfinderlinks.txt | interlace --silent -threads 1 -c \"x8 -u _target_ -X GET POST XML JSON --disable-progress-bar --output-format json --append --output _output_/x8.json\" -o ${TMPDIR}"
 
-	cat ${URLSDIR}/x8.json | jq -r '.[] | select(.found_params | length > 0) | "Transformed URL [\(.method)]: \(.url)?\( ([.found_params[] | "\(.name)=rix4uni"] | join("&")) )"' | unew -el -t -q ${URLSDIR}/x8.urls
+	cat ${TMPDIR}/x8.json | jq -r '.[] | select(.found_params | length > 0) | "Transformed URL [\(.method)]: \(.url)?\( ([.found_params[] | "\(.name)=rix4uni"] | join("&")) )"' | unew -el -t -q ${TMPDIR}/x8.urls
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] X8${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/x8.urls || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "X8" "${TMPDIR}/x8.urls"
 }
 
 ALLURLS(){
 	START_SPINNER "${BGREEN}ALLURLS${RESET}"
 
-	cat ${URLSDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -el -t -q ${ROOT_URLSDIR}/allurls.txt
-	cat ${ROOT_URLSDIR}/allurls.txt | urldedupe -s | eval ${URLS_FILTER} | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -el -t -q ${URLSDIR}/filteredurls.txt
+	cat ${TMPDIR}/*.urls | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -el -t -q ${TMPDIR}/allurls.txt
+	cat ${TMPDIR}/allurls.txt | urldedupe -s | eval ${URLS_FILTER} | grep -aE "(https?://$TARGET(:[0-9]+)?(/)|\.$TARGET[:/])" | unew -el -t -q ${TMPDIR}/filteredurls.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ALLURLS${RESET}: $(wc -l 2>/dev/null < ${ROOT_URLSDIR}/allurls.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-	echo -e "${BGREEN}[+] FILTEREDALLURLS${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/filteredurls.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ALLURLS" "${TMPDIR}/allurls.txt"
+	DISPLAYINFO "FILTEREDALLURLS" "${TMPDIR}/filteredurls.txt"
 }
 
 INTERESTING_URLS(){
 	START_SPINNER "${BGREEN}ALLURLS${RESET}"
 
-	cat ${ROOT_URLSDIR}/allurls.txt | grep -aiE "\b/(login|signin|auth|register|signup|contact|feedback|subscribe|unsubscribe|reset|upload|submit|comment|review|message|file-upload|post|api)\b" | egrep -aiv '.(jpg|jpeg|gif|css|tif|tiff|png|ttf|woff|woff2|icon|pdf|svg|txt|js)' | egrep -av "=" | unew -el -t -q ${ROOT_URLSDIR}/bxss.manualcheck
-	cat ${ROOT_URLSDIR}/allurls.txt | grep -aiE "\.(zip|rar|tar|gz|config|log|bak|backup|java|old|xlsx|json|pdf|doc|docx|pptx|csv|htaccess|7z)$" | unew -el -t -q ${ROOT_URLSDIR}/sensitive_keywords.manualcheck
+	cat ${TMPDIR}/allurls.txt | grep -aiE "\b/(login|signin|auth|register|signup|contact|feedback|subscribe|unsubscribe|reset|upload|submit|comment|review|message|file-upload|post|api)\b" | egrep -aiv '.(jpg|jpeg|gif|css|tif|tiff|png|ttf|woff|woff2|icon|pdf|svg|txt|js)' | egrep -av "=" | unew -el -t -q ${TMPDIR}/bxss.manualcheck
+	cat ${TMPDIR}/allurls.txt | grep -aiE "\.(zip|rar|tar|gz|config|log|bak|backup|java|old|xlsx|json|pdf|doc|docx|pptx|csv|htaccess|7z)$" | unew -el -t -q ${TMPDIR}/sensitive_keywords.manualcheck
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] FORMS_MANUALCHECK${RESET}: $(wc -l 2>/dev/null < ${ROOT_URLSDIR}/forms.manualcheck || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
-	echo -e "${BGREEN}[+] SENSITIVE_KEYWORDS_MANUALCHECK${RESET}: $(wc -l 2>/dev/null < ${URLSDIR}/sensitive_keywords.manualcheck || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "FORMS_MANUALCHECK" "${TMPDIR}/forms.manualcheck"
+	DISPLAYINFO "SENSITIVE_KEYWORDS_MANUALCHECK" "${TMPDIR}/sensitive_keywords.manualcheck"
 }
 
 
@@ -1368,10 +1163,10 @@ INTERESTING_URLS(){
 SUBHIJACK(){
 	START_SPINNER "${BGREEN}SUBHIJACK${RESET}"
 
-	cat ${SUBDOMAINDIR}/alivesubs.txt | subhijack --silent --nc --timeout 30 --concurrency 50 | unew -el -q ${ROOT_VULNDIR}/subhijack.takeover
+	cat ${TMPDIR}/alivesubs.txt | subhijack --silent --nc --timeout 30 --concurrency 50 | unew -el -q ${TMPDIR}/subhijack.takeover
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SUBHIJACK${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/subhijack.takeover || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SUBHIJACK" "${TMPDIR}/subhijack.takeover"
 }
 
 
@@ -1382,38 +1177,29 @@ SUBHIJACK(){
 FTP(){
 	START_SPINNER "${BGREEN}FTP${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/naabu.txt | grep -a ":21$" | unew | interlace --silent -threads 10 -c "ftpx multiuser --ip _target_ --up ~/.garudrecon/wordlists/ftp-username-password.txt > _output_/_cleantarget_.txt" -o ${FTPDIR}
-	cat ${FTPDIR}/*.txt 2>/dev/null | unew -el -t -q ${VULNDIR}/ftp.txt
-
-	# Check if the file has more than 0 lines
-	if [ -f "${VULNDIR}/ftp.txt" ] && [ $(wc -l < "${VULNDIR}/ftp.txt") -gt 0 ]; then
-	    cp "${VULNDIR}/ftp.txt" "${ROOT_VULNDIR}/ftp.txt"
-	fi
+	cat ${TMPDIR}/naabu.txt | grep -a ":21$" | unew | interlace --silent -threads 10 -c "ftpx multiuser --ip _target_ --up ~/.garudrecon/wordlists/ftp-username-password.txt > _output_/_cleantarget_.txt" -o ${TMPDIR}
+	cat ${TMPDIR}/*.txt 2>/dev/null | unew -el -t -q ${TMPDIR}/ftp.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] FTP${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/ftp.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "FTP" "${TMPDIR}/ftp.txt"
 }
 
 SSH(){
 	START_SPINNER "${BGREEN}SSH${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/naabu.txt | grep -a ":22$" | unew -el -i -t -q ${VULNDIR}/ssh-urls.txt
-
-	# cat ${VULNDIR}/ssh-urls.txt | interlace --silent -threads 10 -c "sshx -mode upc -ip _target_ -wordlist wordlists/ftp-username-password.txt > _output_/_cleantarget_.txt" -o ${FTP}
-
-	# ssb -w wordlists/wordlist.txt -p 22 -t 1m -c 1000 -r 1 root@localhost
+	cat ${TMPDIR}/naabu.txt | grep -a ":22$" | unew -el -i -t -q ${TMPDIR}/ssh-urls.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SSH${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/ssh.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SSH" "${TMPDIR}/ssh.txt"
 }
 
 S3SCANNER(){
 	START_SPINNER "${BGREEN}S3SCANNER${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/naabu.txt | s3scanner -bucket-file names.txt -enumerate | unew -el -t -q ${VULNDIR}/s3scanner.txt
+	cat ${TMPDIR}/naabu.txt | s3scanner -bucket-file names.txt -enumerate | unew -el -t -q ${TMPDIR}/s3scanner.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] S3SCANNER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/ssh.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "S3SCANNER" "${TMPDIR}/s3scanner.txt"
 }
 
 
@@ -1421,29 +1207,29 @@ TECHFINDER(){
 	START_SPINNER "${BGREEN}TECHFINDER${RESET}"
 
 	if [ "$TECHFINDER_SCAN_MODE" = "NORMAL" ]; then
-		cat ${ROOT_SUBDOMAINDIR}/httpx.txt | techfinder -silent -timeout 30 -i -discord -id alivesubdomain -json -o ${URLSDIR}/techfinder.json
+		cat ${TMPDIR}/httpx.txt | techfinder -silent -timeout 30 -i -discord -id alivesubdomain -json -o ${TMPDIR}/techfinder.json
 	fi
 
 	if [ "$TECHFINDER_SCAN_MODE" = "ADVANCED" ]; then
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-4 | unew -el -i -t -q ${URLSDIR}/techfinder_dir.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-5 | unew -el -i -t -q ${URLSDIR}/techfinder_dir.txt
-		cat ${ROOT_URLSDIR}/allurls.txt | cut -d"/" -f1-6 | unew -el -i -t -q ${URLSDIR}/techfinder_dir.txt
+		cat ${TMPDIR}/allurls.txt | cut -d"/" -f1-4 | unew -el -i -t -q ${TMPDIR}/techfinder_dir.txt
+		cat ${TMPDIR}/allurls.txt | cut -d"/" -f1-5 | unew -el -i -t -q ${TMPDIR}/techfinder_dir.txt
+		cat ${TMPDIR}/allurls.txt | cut -d"/" -f1-6 | unew -el -i -t -q ${TMPDIR}/techfinder_dir.txt
 
-		cat ${URLSDIR}/techfinder_dir.txt | egrep -av '\?|=|/[0-9]' | grep -aEv '(-.*){2}' | awk -F/ '{if (index($NF, ".") == 0) print $0}' | awk -F/ '{if (length($NF) <= 15) print $0}' | sed 's/\(\/\|\/__\|\/_\)\s*$//' | awk -F'/' 'NF > 3' | unew -el -i -t -q ${URLSDIR}/techfinder_dir_filter.txt
-		cat ${URLSDIR}/techfinder_dir_filter.txt | techfinder -silent -timeout 30 -i -discord -id alivesubdomain -json -o ${URLSDIR}/techfinder.json
+		cat ${TMPDIR}/techfinder_dir.txt | egrep -av '\?|=|/[0-9]' | grep -aEv '(-.*){2}' | awk -F/ '{if (index($NF, ".") == 0) print $0}' | awk -F/ '{if (length($NF) <= 15) print $0}' | sed 's/\(\/\|\/__\|\/_\)\s*$//' | awk -F'/' 'NF > 3' | unew -el -i -t -q ${TMPDIR}/techfinder_dir_filter.txt
+		cat ${TMPDIR}/techfinder_dir_filter.txt | techfinder -silent -timeout 30 -i -discord -id alivesubdomain -json -o ${TMPDIR}/techfinder.json
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] TECHFINDER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/techfinder.json || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "TECHFINDER" "${TMPDIR}/techfinder.json"
 }
 
 VULNTECHFINDER(){
 	START_SPINNER "${BGREEN}VULNTECHFINDER${RESET}"
 
-	cat ${URLSDIR}/techfinder.json | vulntechfinder nuclei --cmd "nuclei -duc -t ~/nuclei-templates -tags {tech} -es unknown,info,low" --parallel 10 --output ${VULNDIR}/vulntechfinder.txt 2>/dev/null
+	cat ${TMPDIR}/techfinder.json | vulntechfinder nuclei --cmd "nuclei -duc -t ~/nuclei-templates -tags {tech} -es unknown,info,low" --parallel 10 --output ${TMPDIR}/vulntechfinder.txt 2>/dev/null
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] VULNTECHFINDER${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/vulntechfinder.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "VULNTECHFINDER" "${TMPDIR}/vulntechfinder.txt"
 }
 
 XSS(){
@@ -1453,121 +1239,58 @@ XSS(){
 	  sed -i 's/^/rix4uni/' "${XSS_WORDLIST}"
 	fi
 
-	if [ "$XSS_SCAN_MODE" = "NORMAL" ]; then
-		if [ "$USE_GFPATTERNS" = "TRUE" ]; then
-			cat ${URLSDIR}/filteredurls.txt | gf xss | unew -el -t -q ${URLSDIR}/gf_xss.txt
-			cat ${URLSDIR}/gf_xss.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
-			cat ${VULNDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/xss_pvreplace.txt
-		else
-			# if USE_GFPATTERNS is FALSE then scan all parameters
-			cat ${URLSDIR}/filteredurls.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
-			cat ${VULNDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/xss_pvreplace.txt
-		fi
+	cat ${TMPDIR}/filteredurls.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${TMPDIR}/xss_xssrecon.txt
+	cat ${TMPDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${TMPDIR}/xss_pvreplace.txt
 
-		# Common steps for both TRUE and FALSE conditions
-		cat ${VULNDIR}/xss_pvreplace.txt | xsschecker -nc -match 'rix4uni' -vuln -t ${XSSCHECKER_THREADS} -timeout ${XSSCHECKER_TIMEOUT} -retries ${XSSCHECKER_RETRIES} -filter | unew -el -t -q ${VULNDIR}/xsschecker.txt
-	fi
-
-	if [ "$XSS_SCAN_MODE" = "ADVANCED" ]; then
-		if [ "$USE_GFPATTERNS" = "TRUE" ]; then
-			cat ${URLSDIR}/filteredurls.txt | gf xss | unew -el -t -q ${URLSDIR}/gf_xss.txt
-			cat ${URLSDIR}/gf_xss.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
-			cat ${VULNDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/xss_pvreplace.txt
-		else
-			# if USE_GFPATTERNS is FALSE then scan all parameters
-			cat ${URLSDIR}/filteredurls.txt | xssrecon --silent --specialchar "<, >" --json | jq -r 'select(.reflected==true) | select(.count.allowed==2) | .baseurl' | unew -q ${VULNDIR}/xss_xssrecon.txt
-			cat ${VULNDIR}/xss_xssrecon.txt | pvreplace -silent -payload ${XSS_WORDLIST} -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/xss_pvreplace.txt
-		fi
-
-		# Common steps for both TRUE and FALSE conditions
-		cat ${VULNDIR}/xss_pvreplace.txt | xsschecker -nc -match 'rix4uni' -vuln -t ${XSSCHECKER_THREADS} -timeout ${XSSCHECKER_TIMEOUT} -retries ${XSSCHECKER_RETRIES} -filter | unew -el -t -q ${VULNDIR}/xsschecker.txt
-
-		# Checks XSS False Positive		
-		cat ${VULNDIR}/xsschecker.txt | pyxss --silent --headless --no-color --workers 10 | egrep -av 'NOT VULNERABLE:' | unew -el -ef ${ROOT_VULNDIR}/xss.txt | notify -silent -duc -id ${XSS_NOTIFY}
-	fi
+	cat ${TMPDIR}/xss_pvreplace.txt | xsschecker -nc -match 'rix4uni' -vuln -t ${XSSCHECKER_THREADS} -timeout ${XSSCHECKER_TIMEOUT} -retries ${XSSCHECKER_RETRIES} -filter | unew -el -t -q ${TMPDIR}/xsschecker.txt
+	
+	cat ${TMPDIR}/xsschecker.txt | pyxss --silent --headless --no-color --workers 10 | egrep -av 'NOT VULNERABLE:' | unew -el -ef ${TMPDIR}/xss.txt | notify -silent -duc -id ${XSS_NOTIFY}
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] XSS${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/xss.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "XSS" "${TMPDIR}/xss.txt"
 }
 
 ERRORBASEDSQLI(){
 	START_SPINNER "${BGREEN}ERRORBASEDSQLI${RESET}"
 
-	if [ "$USE_GFPATTERNS" = "TRUE" ]; then
-		cat ${URLSDIR}/filteredurls.txt | gf sqli | unew -el -t -q ${URLSDIR}/gf_sqli.txt
-		cat ${URLSDIR}/gf_sqli.txt | sqlifinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -q ${ROOT_VULNDIR}/errorbasedsqli.txt
-	else
-		# if USE_GFPATTERNS is FALSE then scan all parameters
-		cat ${URLSDIR}/filteredurls.txt | sqlifinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -q ${ROOT_VULNDIR}/errorbasedsqli.txt
-	fi
+	cat ${TMPDIR}/filteredurls.txt | sqlifinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -q ${TMPDIR}/errorbasedsqli.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] ERRORBASEDSQLI${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/errorbasedsqli.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "ERRORBASEDSQLI" "${TMPDIR}/errorbasedsqli.txt"
 }
 
 TIMEBASEDSQLI(){
 	START_SPINNER "${BGREEN}TIMEBASEDSQLI${RESET}"
 
-	if [ "$USE_GFPATTERNS" = "TRUE" ]; then
-		cat ${URLSDIR}/filteredurls.txt | gf sqli | unew -el -t -q ${URLSDIR}/gf_sqli.txt
-		cat ${URLSDIR}/gf_sqli.txt | pvreplace -silent -payload "*" -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -ef -el -t -q ${VULNDIR}/sqli_pvreplace.txt
-	else
-		# if USE_GFPATTERNS is FALSE then scan all parameters
-		cat ${URLSDIR}/filteredurls.txt | pvreplace -silent -payload "*" -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -ef -el -t -q ${VULNDIR}/sqli_pvreplace.txt
-	fi
+	cat ${TMPDIR}/filteredurls.txt | pvreplace -silent -payload "*" -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -ef -el -t -q ${TMPDIR}/sqli_pvreplace.txt
 
-	# Common steps for both TRUE and FALSE conditions
-	gosqli -list ${VULNDIR}/sqli_pvreplace.txt -payload ${SQLI_WORDLIST} | tee -a ${VULNDIR}/sqli.txt
-
-	# Check if the file has more than 0 lines
-	if [ -f "${VULNDIR}/sqli.txt" ] && [ $(wc -l < "${VULNDIR}/sqli.txt") -gt 0 ]; then
-		cat ${VULNDIR}/sqli.txt | grep -a "SQLI CONFIRMED:" | unew -el -t -q ${VULNDIR}/validsqli.txt
-	    cp "${VULNDIR}/validsqli.txt" "${ROOT_VULNDIR}/validsqli.txt"
-	fi
+	gosqli -list ${TMPDIR}/sqli_pvreplace.txt -payload ${SQLI_WORDLIST} | grep -a "SQLI CONFIRMED:" | unew -el -t -q ${TMPDIR}/sqli.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] TIMEBASEDSQLI${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/validsqli.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "TIMEBASEDSQLI" "${TMPDIR}/sqli.txt"
 }
 
 LFI(){
 	START_SPINNER "${BGREEN}LFI${RESET}"
 
-	if [ "$USE_GFPATTERNS" = "TRUE" ]; then
-		cat ${URLSDIR}/filteredurls.txt | gf lfi | unew -el -t -q ${URLSDIR}/gf_lfi.txt
-		cat ${URLSDIR}/gf_lfi.txt | lfifinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -q ${ROOT_VULNDIR}/lfi.txt
-	else
-		# if USE_GFPATTERNS is FALSE then scan all parameters	
-		cat ${URLSDIR}/filteredurls.txt | lfifinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -q ${ROOT_VULNDIR}/lfi.txt
-	fi
+	cat ${TMPDIR}/filteredurls.txt | lfifinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -q ${TMPDIR}/lfi.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] LFI${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/lfi.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "LFI" "${TMPDIR}/lfi.txt"
 }
 
 RCE(){
 	START_SPINNER "${BGREEN}RCE${RESET}"
 
-	if [ "$USE_GFPATTERNS" = "TRUE" ]; then
-		cat ${URLSDIR}/filteredurls.txt | gf rce | unew -el -t -q ${URLSDIR}/gf_rce.txt
-		cat ${URLSDIR}/gf_rce.txt | pvreplace -silent -payload id -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/rce_pvreplace.txt
-	else
-		# if USE_GFPATTERNS is FALSE then scan all parameters
-		cat ${URLSDIR}/filteredurls.txt | pvreplace -silent -payload id -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${VULNDIR}/rce_pvreplace.txt
-	fi
+	cat ${TMPDIR}/filteredurls.txt | pvreplace -silent -payload id -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${TMPDIR}/rce_pvreplace.txt
 
-	# Common steps for both TRUE and FALSE conditions
-	ffuf -s -u FUZZ -w ${VULNDIR}/rce_pvreplace.txt -mr "uid=\d+\(\w+-?\w*\) gid=\d+\(\w+-?\w*\) groups=\d+\(\w+-?\w*\)" | unew -el -t -q ${VULNDIR}/rce_ffuf.txt
+	ffuf -s -u FUZZ -w ${TMPDIR}/rce_pvreplace.txt -mr "uid=\d+\(\w+-?\w*\) gid=\d+\(\w+-?\w*\) groups=\d+\(\w+-?\w*\)" | unew -el -t -q ${TMPDIR}/rce_ffuf.txt
 
 	# commix
-	interlace --silent -tL ${URLSDIR}/filteredurls.txt -threads 1 -c "timelimitx -t ${COMMIX_TIMELIMITX} commix --batch -u \"_target_\" --output-dir vuln --os-cmd=\"id; ls; pwd\""
-
-	# Check if the file has more than 0 lines
-	if [ -f "${VULNDIR}/rce.txt" ] && [ $(wc -l < "${VULNDIR}/rce.txt") -gt 0 ]; then
-	    cp "${VULNDIR}/rce.txt" "${ROOT_VULNDIR}/rce.txt"
-	fi
+	interlace --silent -tL ${TMPDIR}/filteredurls.txt -threads 1 -c "timelimitx -t ${COMMIX_TIMELIMITX} commix --batch -u \"_target_\" --output-dir vuln --os-cmd=\"id; ls; pwd\""
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] RCE${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/rce.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "RCE" "${TMPDIR}/rce.txt"
 }
 
 SSTI(){
@@ -1576,129 +1299,121 @@ SSTI(){
 	# I will write later
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SSTI${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/ssti.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SSTI" "${TMPDIR}/ssti.txt"
 }
 
 SSRF(){
 	START_SPINNER "${BGREEN}RCE${RESET}"
 
-	cat ${URLSDIR}/filteredurls.txt | pvreplace -silent -payload "http://sfsh.oastify.com" -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -ef -el -t -q ${VULNDIR}/ssrf_pvreplace.txt
-	cat ${VULNDIR}/ssrf_pvreplace.txt | httpx -duc -silent -nc -fr | unew -ef -el -t -q ${VULNDIR}/ssrf.txt
+	cat ${TMPDIR}/filteredurls.txt | pvreplace -silent -payload "http://sfsh.oastify.com" -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -ef -el -t -q ${TMPDIR}/ssrf_pvreplace.txt
+	cat ${TMPDIR}/ssrf_pvreplace.txt | httpx -duc -silent -nc -fr | unew -ef -el -t -q ${TMPDIR}/ssrf.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SSRF${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/ssrf.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SSRF" "${TMPDIR}/ssrf.txt"
 }
 
 OPEN_REDIRECT(){
 	START_SPINNER "${BGREEN}OPEN_REDIRECT${RESET}"
 
-	if [ "$USE_GFPATTERNS" = "TRUE" ]; then
-		cat ${URLSDIR}/filteredurls.txt | gf redirect | redirectfinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -ef -el -q ${ROOT_VULNDIR}/open_redirect.txt
-	else
-		# if USE_GFPATTERNS is FALSE then scan all parameters
-		cat ${URLSDIR}/filteredurls.txt | redirectfinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -ef -el -q ${ROOT_VULNDIR}/open_redirect.txt
-	fi
+	cat ${TMPDIR}/filteredurls.txt | redirectfinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -ef -el -q ${TMPDIR}/open_redirect.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] OPEN_REDIRECT${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/open_redirect.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "OPEN_REDIRECT" "${TMPDIR}/open_redirect.txt"
 }
 
 DOTGIT(){
 	START_SPINNER "${BGREEN}DOTGIT${RESET}"
 
-	cat ${SUBDOMAINDIR}/alivesubs.txt | dotgitfinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -t -q ${ROOT_VULNDIR}/dotgit.txt
+	cat ${TMPDIR}/alivesubs.txt | dotgitfinder --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -t -q ${TMPDIR}/dotgit.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] DOTGIT${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/dotgit.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "DOTGIT" "${TMPDIR}/dotgit.txt"
 }
 
 PDFTOTEXT(){
 	START_SPINNER "${BGREEN}PDFTOTEXT${RESET}"
 
-	cat ${ROOT_URLSDIR}/allurls.txt | grep -a "\.pdf$" | interlace --silent -threads 10 -c "curl -s _target_ | pdftotext - _output_/_cleantarget_.txt 2>/dev/null" -o ${PDFTOTEXTDIR}
-	find ${PDFTOTEXTDIR} -type f -print0 | xargs --null grep -a -Z -L -Eai 'internal use only|confidential' | xargs --null rm -rf
+	cat ${TMPDIR}/allurls.txt | grep -a "\.pdf$" | interlace --silent -threads 10 -c "curl -s _target_ | pdftotext - _output_/_cleantarget_.txt 2>/dev/null" -o ${TMPDIR}
+	find ${TMPDIR} -type f -print0 | xargs --null grep -a -Z -L -Eai 'internal use only|confidential' | xargs --null rm -rf
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] PDFTOTEXT${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/pdftotext.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "PDFTOTEXT" "${TMPDIR}/pdftotext.txt"
 }
 
 JSLEAKS(){
 	START_SPINNER "${BGREEN}JSLEAKS${RESET}"
 
-	cat ${ROOT_URLSDIR}/allurls.txt | egrep -av "\.json" | grep -a "\.js" | linkinspector -silent -nc -mt "application/javascript" | awk '{print $1}' | unew -el -t -q ${ROOT_VULNDIR}/js-links.txt
-	cat ${ROOT_VULNDIR}/js-links.txt | nuclei -duc -silent -nc -t ~/nuclei-templates/exposures/ | unew -el -t -q ${ROOT_VULNDIR}/js-leaks.txt
+	cat ${TMPDIR}/allurls.txt | egrep -av "\.json" | grep -a "\.js" | linkinspector -silent -nc -mt "application/javascript" | awk '{print $1}' | unew -el -t -q ${TMPDIR}/js-links.txt
+	cat ${TMPDIR}/js-links.txt | nuclei -duc -silent -nc -t ~/nuclei-templates/exposures/ | unew -el -t -q ${TMPDIR}/js-leaks.txt
 	# trufflehog
 	# secretfinder
 	# mantra
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] JSLEAKS${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/jsleaks.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "JSLEAKS" "${TMPDIR}/jsleaks.txt"
 }
 
 IIS(){
 	START_SPINNER "${BGREEN}IIS${RESET}"
 
 	if [ "$IIS_SCAN_MODE" = "NORMAL" ]; then
-		cat ${ROOT_SUBDOMAINDIR}/httpx.txt | grep -aE "IIS|IIS Windows Server|Microsoft-IIS|Windows Server" | awk '{print $1}' | unew -el -t -q ${VULNDIR}/iis.txt
+		cat ${TMPDIR}/httpx.txt | grep -aE "IIS|IIS Windows Server|Microsoft-IIS|Windows Server" | awk '{print $1}' | unew -el -t -q ${TMPDIR}/iis.txt
 	fi
 
 	if [ "$IIS_SCAN_MODE" = "ADVANCED" ]; then
 		# Check if the file exists and has 0 lines
-	    if [ ! -s "${ROOT_URLSDIR}/httpx.txt" ]; then
-	    	cat ${ROOT_URLSDIR}/allurls.txt | httpx -duc -silent -nc -td -t ${HTTPX_THREADS} | unew -el -t -q ${ROOT_URLSDIR}/httpx.txt
+	    if [ ! -s "${TMPDIR}/httpx.txt" ]; then
+	    	cat ${TMPDIR}/allurls.txt | httpx -duc -silent -nc -td -t ${HTTPX_THREADS} | unew -el -t -q ${TMPDIR}/httpx.txt
 	    fi
 
-		cat ${ROOT_URLSDIR}/httpx.txt | grep -aE "IIS|IIS Windows Server|Microsoft-IIS|Windows Server" | awk '{print $1}' | unew -el -t -q ${VULNDIR}/iis.txt
+		cat ${TMPDIR}/httpx.txt | grep -aE "IIS|IIS Windows Server|Microsoft-IIS|Windows Server" | awk '{print $1}' | unew -el -t -q ${TMPDIR}/iis.txt
 	fi
 
     # Run the commands if the file has content
-	cat ${VULNDIR}/iis.txt | interlace --silent -threads 10 -c "shortscan _target_ -F -s -p 1 > _output_/_cleantarget_.txt" -o ${IISIDR}
+	cat ${TMPDIR}/iis.txt | interlace --silent -threads 10 -c "shortscan _target_ -F -s -p 1 > _output_/_cleantarget_.txt" -o ${TMPDIR}
 	find ${IISIDR}/*.txt -type f -print0 | xargs --null grep -a -Z -L 'Vulnerable: Yes' | xargs --null rm -rf
-	while IFS= read -r -d '' f; do printf 'URL: ===== %s =======\n' "$f"; cat -- "$f"; echo; done < <(find ${IISIDR}/*.txt -type f -print0 | xargs -0 -r grep -a -Z -L 'Vulnerable: No') >> ${ROOT_VULNDIR}/iis.txt
+	while IFS= read -r -d '' f; do printf 'URL: ===== %s =======\n' "$f"; cat -- "$f"; echo; done < <(find ${TMPDIR}/*.txt -type f -print0 | xargs -0 -r grep -a -Z -L 'Vulnerable: No') >> ${TMPDIR}/iis.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] IIS${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/iis.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "IIS" "${TMPDIR}/iis.txt"
 }
 
 SWAGGERUI(){
 	START_SPINNER "${BGREEN}SWAGGERUI${RESET}"
 
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | grep -aE "Swagger UI" | awk '{print $1}' | unew -el -t -q ${VULNDIR}/swaggerui.txt
-	cat ${VULNDIR}/swaggerui.txt | goswagger --silent --nc --timeout 30 --concurrent 50 --vuln | unew -el -t -q ${ROOT_VULNDIR}/swaggerui.txt
-
-	# False Positive Checking
-	cat ${ROOT_VULNDIR}/swaggerui.txt | pyxss --silent --no-color -o ${ROOT_VULNDIR}/swaggerui_xss.txt
+	cat ${TMPDIR}/httpx.txt | grep -aE "Swagger UI" | awk '{print $1}' | unew -el -t -q ${TMPDIR}/swaggerui.txt
+	cat ${TMPDIR}/swaggerui.txt | goswagger --silent --nc --timeout 30 --concurrent 50 --vuln | awk '{print $2}' | pyxss --silent --no-color -o ${TMPDIR}/swaggerui_xss.txt
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] SWAGGERUI${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/swaggerui_xss.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "SWAGGERUI" "${TMPDIR}/swaggerui_xss.txt"
 }
 
 403_401_BYPASS(){
 	START_SPINNER "${BGREEN}403_401_BYPASS${RESET}"
 
 	# Filter URLs with 403/401 status codes
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | grep -aE "\[403\]|\[401\]" | awk '{print $1}' | unew -el -t -q ${VULNDIR}/403_401_candidates.txt
-	cat ${URLSDIR}/filteredurls.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "httpx -duc -silent -nc -sc -fr _target_ | grep -aE '\[403\]|\[401\]' | awk '{print \$1}'" -o ${VULNDIR}/tmp-403-401
-	cat ${VULNDIR}/tmp-403-401/*.txt 2>/dev/null | grep -av "^$" | unew -el -t -q ${VULNDIR}/403_401_candidates.txt && rm -rf ${VULNDIR}/tmp-403-401
+	cat ${TMPDIR}/httpx.txt | grep -aE "\[403\]|\[401\]" | awk '{print $1}' | unew -el -t -q ${TMPDIR}/403_401_candidates.txt
+	cat ${TMPDIR}/filteredurls.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "httpx -duc -silent -nc -sc -fr _target_ | grep -aE '\[403\]|\[401\]' | awk '{print \$1}'" -o ${TMPDIR}/tmp-403-401
+	cat ${TMPDIR}/tmp-403-401/*.txt 2>/dev/null | grep -av "^$" | unew -el -t -q ${TMPDIR}/403_401_candidates.txt && rm -rf ${TMPDIR}/tmp-403-401
 
 	# Use nomore403 for 403/401 bypass
-	cat ${VULNDIR}/403_401_candidates.txt | nomore403 | unew -el -t -q ${VULNDIR}/403_401_bypass.txt
+	cat ${TMPDIR}/403_401_candidates.txt | nomore403 | unew -el -t -q ${TMPDIR}/403_401_bypass.txt
 
 	# Check if the file has more than 0 lines
-	if [ -f "${VULNDIR}/403_401_bypass.txt" ] && [ $(wc -l < "${VULNDIR}/403_401_bypass.txt") -gt 0 ]; then
-	    cp "${VULNDIR}/403_401_bypass.txt" "${ROOT_VULNDIR}/403_401_bypass.txt"
+	if [ -f "${TMPDIR}/403_401_bypass.txt" ] && [ $(wc -l < "${TMPDIR}/403_401_bypass.txt") -gt 0 ]; then
+	    cp "${TMPDIR}/403_401_bypass.txt" "${TMPDIR}/403_401_bypass.txt"
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] 403_401_BYPASS${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/403_401_bypass.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "403_401_BYPASS" "${TMPDIR}/403_401_bypass.txt"
 }
 
 XXE(){
 	START_SPINNER "${BGREEN}XXE${RESET}"
 
 	# Filter URLs that might accept XML (API endpoints, file uploads, etc.)
-	cat ${ROOT_URLSDIR}/allurls.txt | grep -aE "\.xml$|/api/|/upload|/import|/parse|/convert" | unew -el -t -q ${VULNDIR}/xxe_candidates.txt
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | grep -aE "application/xml|text/xml" | awk '{print $1}' | unew -el -t -q ${VULNDIR}/xxe_candidates.txt
+	cat ${TMPDIR}/allurls.txt | grep -aE "\.xml$|/api/|/upload|/import|/parse|/convert" | unew -el -t -q ${TMPDIR}/xxe_candidates.txt
+	cat ${TMPDIR}/httpx.txt | grep -aE "application/xml|text/xml" | awk '{print $1}' | unew -el -t -q ${TMPDIR}/xxe_candidates.txt
 
 	# Use xxeinjector and xxer for XXE detection
 	cat ${VULNDIR}/xxe_candidates.txt | interlace --silent -threads ${INTERLACE_THREADS:-10} -c "xxeinjector -u _target_ -o _output_/_cleantarget_.txt" -o ${VULNDIR}/tmp-xxe
@@ -1713,7 +1428,7 @@ XXE(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] XXE${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/xxe.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "XXE" "${ROOT_VULNDIR}/xxe.txt"
 }
 
 CSRF(){
@@ -1734,7 +1449,7 @@ CSRF(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] CSRF${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/csrf.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "CSRF" "${ROOT_VULNDIR}/csrf.txt"
 }
 
 CORS(){
@@ -1752,7 +1467,7 @@ CORS(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] CORS${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/cors.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "CORS" "${ROOT_VULNDIR}/cors.txt"
 }
 
 JWT(){
@@ -1776,7 +1491,7 @@ JWT(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] JWT${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/jwt.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "JWT" "${ROOT_VULNDIR}/jwt.txt"
 }
 
 API_SECURITY(){
@@ -1799,7 +1514,7 @@ API_SECURITY(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] API_SECURITY${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/api_security.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "API_SECURITY" "${ROOT_VULNDIR}/api_security.txt"
 }
 
 HOST_HEADER_INJECTION(){
@@ -1815,7 +1530,7 @@ HOST_HEADER_INJECTION(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] HOST_HEADER_INJECTION${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/host_header_injection.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "HOST_HEADER_INJECTION" "${ROOT_VULNDIR}/host_header_injection.txt"
 }
 
 CRLF_INJECTION(){
@@ -1830,7 +1545,7 @@ CRLF_INJECTION(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] CRLF_INJECTION${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/crlf_injection.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "CRLF_INJECTION" "${ROOT_VULNDIR}/crlf_injection.txt"
 }
 
 PATH_TRAVERSAL(){
@@ -1846,7 +1561,7 @@ PATH_TRAVERSAL(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] PATH_TRAVERSAL${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/path_traversal.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "PATH_TRAVERSAL" "${ROOT_VULNDIR}/path_traversal.txt"
 }
 
 NOSQL_INJECTION(){
@@ -1866,7 +1581,7 @@ NOSQL_INJECTION(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] NOSQL_INJECTION${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/nosql_injection.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "NOSQL_INJECTION" "${ROOT_VULNDIR}/nosql_injection.txt"
 }
 
 INSECURE_DESERIALIZATION(){
@@ -1886,7 +1601,7 @@ INSECURE_DESERIALIZATION(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] INSECURE_DESERIALIZATION${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/insecure_deserialization.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "INSECURE_DESERIALIZATION" "${ROOT_VULNDIR}/insecure_deserialization.txt"
 }
 
 PROTOTYPE_POLLUTION(){
@@ -1901,7 +1616,7 @@ PROTOTYPE_POLLUTION(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] PROTOTYPE_POLLUTION${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/prototype_pollution.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "PROTOTYPE_POLLUTION" "${ROOT_VULNDIR}/prototype_pollution.txt"
 }
 
 HTTP_SMUGGLING(){
@@ -1920,7 +1635,7 @@ HTTP_SMUGGLING(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] HTTP_SMUGGLING${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/http_smuggling.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "HTTP_SMUGGLING" "${ROOT_VULNDIR}/http_smuggling.txt"
 }
 
 WEB_CACHE_POISONING(){
@@ -1939,7 +1654,7 @@ WEB_CACHE_POISONING(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] WEB_CACHE_POISONING${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/web_cache_poisoning.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "WEB_CACHE_POISONING" "${ROOT_VULNDIR}/web_cache_poisoning.txt"
 }
 
 BROKEN_LINKS(){
@@ -1964,7 +1679,7 @@ BROKEN_LINKS(){
 	fi
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] BROKEN_LINKS${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/broken_links.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "BROKEN_LINKS" "${ROOT_VULNDIR}/broken_links.txt"
 }
 
 
@@ -1974,21 +1689,21 @@ BROKEN_LINKS(){
 LINKINSPECTOR(){
 	START_SPINNER "${BGREEN}LINKINSPECTOR${RESET}"
 
-	cat ${ROOT_URLSDIR}/allurls.txt | linkinspector -silent -nc -append-output linkinspector.txt
+	cat ${TMPDIR}/allurls.txt | linkinspector -silent -nc -append-output linkinspector.txt
 
 	# Domain Backup Fuzz
-	cat ${ROOT_SUBDOMAINDIR}/httpx.txt | awk -F' ' '{ if ($2 == "[403]" || $2 == "[404]" || $2 == "[302]") print $1 }' | unew -el -t -q ${SUBDOMAINDIR}/notaccessible_subs.txt
-	cat ${SUBDOMAINDIR}/notaccessible_subs.txt | fuzzuli -sl -mt shuffle -jw | unew -el -t -q ${SUBDOMAINDIR}/fuzzuli.txt
-	cat ${SUBDOMAINDIR}/fuzzuli.txt | linkinspector -silent -nc -mc 200,302 -append-output ${SUBDOMAINDIR}/fuzzuli_linkinspector.txt
+	cat ${TMPDIR}/httpx.txt | awk -F' ' '{ if ($2 == "[403]" || $2 == "[404]" || $2 == "[302]") print $1 }' | unew -el -t -q ${TMPDIR}/notaccessible_subs.txt
+	cat ${TMPDIR}/notaccessible_subs.txt | fuzzuli -sl -mt shuffle -jw | unew -el -t -q ${TMPDIR}/fuzzuli.txt
+	cat ${TMPDIR}/fuzzuli.txt | linkinspector -silent -nc -mc 200,302 -append-output ${TMPDIR}/fuzzuli_linkinspector.txt
 
 
-	cat ${SUBDOMAINDIR}/notaccessible_subs.txt | wordgen -silent -path wordlists/words.txt -e ".rar, .zip, .tar.gz, .tar, .gz, .jar, .7z, .bz2, .sql, .backup, .war" | unew -el -t -q wordgen.txt
-	cat wordgen.txt | linkinspector -silent -nc -mc 200,302 -append-output ${SUBDOMAINDIR}/fuzzuli_linkinspector.txt
+	cat ${TMPDIR}/notaccessible_subs.txt | wordgen -silent -path wordlists/words.txt -e ".rar, .zip, .tar.gz, .tar, .gz, .jar, .7z, .bz2, .sql, .backup, .war" | unew -el -t -q wordgen.txt
+	cat wordgen.txt | linkinspector -silent -nc -mc 200,302 -append-output ${TMPDIR}/fuzzuli_linkinspector.txt
 
-	cat ${SUBDOMAINDIR}/notaccessible_subs.txt | interlace --silent -threads ${INTERLACE_THREADS} -c "ffuf -s -u _target_/FUZZ -w wordlists/onelistforallshort.txt -mc ${FFUFDIRENUM_STATUS_MATCH} -o _output_/_cleantarget_.json" -o ${SUBDOMAINDIR}/ffufdirenum
+	cat ${TMPDIR}/notaccessible_subs.txt | interlace --silent -threads ${INTERLACE_THREADS} -c "ffuf -s -u _target_/FUZZ -w wordlists/onelistforallshort.txt -mc ${FFUFDIRENUM_STATUS_MATCH} -o _output_/_cleantarget_.json" -o ${TMPDIR}/ffufdirenum
 
 	STOP_SPINNER
-	echo -e "${BGREEN}[+] LINKINSPECTOR${RESET}: $(wc -l 2>/dev/null < ${ROOT_VULNDIR}/linkinspector.txt || echo 0), ${TIME} seconds" | unew -a $RESUMELOGFILE
+	DISPLAYINFO "LINKINSPECTOR" "${TMPDIR}/linkinspector.txt"
 }
 
 
@@ -2027,10 +1742,7 @@ RECON(){
 	run "SHOSUBGO"
 	run "ORG2ASN"
 	run "ARINRANGE"
-	run "SPK"
 	run "IPFINDER"
-	run "ASNMAP"
-	run "UDON"
 
 
 	# Cloud Recon
@@ -2042,11 +1754,9 @@ RECON(){
 
 
 	# Content Security Policy
-	run "CSPRECON"
 	run "CSPFINDER"
 	run "JSUBFINDER"
 	run "ALLSUBDOMAIN"
-	run "SUBWIZ"
 
 
 	if [[ "$ACTIVE_ENUM" == true ]]; then
@@ -2063,8 +1773,6 @@ RECON(){
 
 		# Subdomain Resolving
 		run "PUREDNS_RESOLVE"
-		run "SHUFFLEDNS"
-		run "MASSDNS"
 		run "ALLSUBDOMAIN_RESOLVING"
 	fi
 
@@ -2081,16 +1789,8 @@ RECON(){
 	# run "FFUFBRUTE"
 
 
-	# VHOST Dicovery
-	# run "FFUFVHOST"
-
-
 	# Favicon Lookup
 	run "FAVINFO"
-
-
-	# Screenshotting
-	run "GOWITNESS"
 
 
 	# Directory Enumeration
@@ -2098,7 +1798,6 @@ RECON(){
 
 
 	# Email Enumeration
-	run "EMAILFINDER"
 	run "EMAILEXTRACTOR"
 
 
@@ -2155,10 +1854,7 @@ if [[ "$RECON_SUBDOMAIN" == true ]]; then
 	run "SHOSUBGO"
 	run "ORG2ASN"
 	run "ARINRANGE"
-	run "SPK"
 	run "IPFINDER"
-	run "ASNMAP"
-	run "UDON"
 
 
 	# Cloud Recon
@@ -2170,11 +1866,9 @@ if [[ "$RECON_SUBDOMAIN" == true ]]; then
 
 
 	# Content Security Policy
-	run "CSPRECON"
 	run "CSPFINDER"
 	run "JSUBFINDER"
 	run "ALLSUBDOMAIN"
-	run "SUBWIZ"
 
 
 	if [[ "$ACTIVE_ENUM" == true ]]; then
@@ -2191,8 +1885,6 @@ if [[ "$RECON_SUBDOMAIN" == true ]]; then
 
 		# Subdomain Resolving
 		run "PUREDNS_RESOLVE"
-		run "SHUFFLEDNS"
-		run "MASSDNS"
 		run "ALLSUBDOMAIN_RESOLVING"
 	fi
 
@@ -2266,10 +1958,7 @@ else
 	run "SHOSUBGO"
 	run "ORG2ASN"
 	run "ARINRANGE"
-	run "SPK"
 	run "IPFINDER"
-	run "ASNMAP"
-	run "UDON"
 
 
 	# Cloud Recon
@@ -2281,14 +1970,12 @@ else
 
 
 	# Content Security Policy
-	run "CSPRECON"
 	run "CSPFINDER"
 	run "JSUBFINDER"
 	run "ALLSUBDOMAIN"
 
 
 	if [[ "$ACTIVE_ENUM" == true ]]; then
-		run "SUBWIZ"
 
 		# Subdomain Permutations
 		run "ALTDNS"
@@ -2303,8 +1990,6 @@ else
 
 		# Subdomain Resolving
 		run "PUREDNS_RESOLVE"
-		run "SHUFFLEDNS"
-		run "MASSDNS"
 		run "ALLSUBDOMAIN_RESOLVING"
 	fi
 
@@ -2321,16 +2006,8 @@ else
 	# run "FFUFBRUTE"
 
 
-	# VHOST Dicovery
-	# run "FFUFVHOST"
-
-
 	# Favicon Lookup
 	run "FAVINFO"
-
-
-	# Screenshotting
-	run "GOWITNESS"
 
 
 	# Directory Enumeration
@@ -2338,7 +2015,6 @@ else
 
 
 	# Email Enumeration
-	run "EMAILFINDER"
 	run "EMAILEXTRACTOR"
 
 
