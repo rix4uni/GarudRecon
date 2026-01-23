@@ -619,10 +619,6 @@ GOCL() {
     install_custom_tool "GOCL" "gocl" "wget -q https://github.com/rix4uni/gocl/releases/download/v0.0.4/gocl-linux-amd64-0.0.4.tgz && tar -xvzf gocl-linux-amd64-0.0.4.tgz &>/dev/null && rm -rf gocl-linux-amd64-0.0.4.tgz && mkdir -p ~/go/bin && mv gocl ~/go/bin/gocl"
 }
 
-GOBUILD() {
-    install_gocl_tool "GOBUILD" "gobuild" "github.com/rix4uni/gobuild"
-}
-
 
 ARJUN() {
     install_pip3_tool "ARJUN" "arjun" "arjun --break-system-packages"
@@ -706,10 +702,6 @@ MAPCIDR() {
 
 CHAOS() {
     install_gocl_tool "CHAOS" "chaos" "github.com/projectdiscovery/chaos-client" "-c \"cmd/chaos\""
-}
-
-TLDFINDER() {
-    install_gocl_tool "TLDFINDER" "tldfinder" "github.com/projectdiscovery/tldfinder"
 }
 
 ALTERX() {
@@ -874,10 +866,6 @@ BUILTWITHSUBS() {
 
 GOOP() {
     install_gocl_tool "GOOP" "goop" "github.com/nyancrimew/goop"
-}
-
-COMMIX() {
-    install_custom_tool "COMMIX" "commix" "git clone https://github.com/commixproject/commix.git --depth 1 &>/dev/null && cd commix && sed -i \"s/version='[0-9]\\+\\.[0-9]\\+[^']*'/version='4.0'/g\" setup.py && python3 setup.py install &>/dev/null && cd .. && rm -rf commix"
 }
 
 PVREPLACE() {
@@ -1055,7 +1043,6 @@ ALL(){
     PROXYCHAINS_SETUP
 
     GOCL
-    GOBUILD
     ARJUN
     TLDINFO
     X8
@@ -1077,7 +1064,6 @@ ALL(){
     NAABU
     MAPCIDR
     CHAOS
-    TLDFINDER
     ALTERX
     NOTIFY
     WAYBACKURLS
@@ -1119,7 +1105,6 @@ ALL(){
     ARINRANGE
     BUILTWITHSUBS
     GOOP
-    COMMIX
     PVREPLACE
     FTPX
     URLDEDUPE
