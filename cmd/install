@@ -536,26 +536,6 @@ SETUPTOOLS() {
     install_custom_tool "SETUPTOOLS" "true" "pip3 install --upgrade setuptools --no-cache-dir &>/dev/null"
 }
 
-PIPREQS() {
-    install_pip3_tool "PIPREQS" "pipreqs" "pipreqs --no-cache-dir --break-system-packages"
-}
-
-AWSCLI() {
-    install_pip3_tool "AWSCLI" "aws" "awscli --upgrade --break-system-packages"
-}
-
-YQ() {
-    install_custom_tool "YQ" "yq" "wget -q -O /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 &>/dev/null && chmod +x /usr/bin/yq"
-}
-
-CSV2JSON() {
-    install_custom_tool "CSV2JSON" "csv2json" "wget -q https://github.com/knadh/csv2json/releases/download/v0.1.1/csv2json_0.1.1_linux_amd64.tar.gz && tar -xzf csv2json_0.1.1_linux_amd64.tar.gz && mv csv2json /usr/local/bin/ && rm -rf csv2json_0.1.1_linux_amd64.tar.gz"
-}
-
-CSVTK() {
-    install_custom_tool "CSVTK" "csvtk" "wget -q https://github.com/shenwei356/csvtk/releases/download/v0.32.0/csvtk_linux_amd64.tar.gz && tar -xzf csvtk_linux_amd64.tar.gz && mv csvtk /usr/local/bin/ && rm -rf csvtk_linux_amd64.tar.gz"
-}
-
 PKG_CONFIG() {
     START_SPINNER "${BGREEN}PKG_CONFIG${RESET}"
     apt install pkg-config -y &>/dev/null
@@ -1185,11 +1165,6 @@ ALL(){
     PACKAGES
     PIP3
     SETUPTOOLS
-    PIPREQS
-    AWSCLI
-    YQ
-    CSV2JSON
-    CSVTK
     PKG_CONFIG
     CHROME
     PIPX
