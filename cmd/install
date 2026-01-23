@@ -728,14 +728,6 @@ WAYBACKURLS() {
     install_gocl_tool "WAYBACKURLS" "waybackurls" "github.com/tomnomnom/waybackurls"
 }
 
-GF() {
-    install_gocl_tool "GF" "gf" "github.com/tomnomnom/gf"
-}
-
-GF_PATTERNS() {
-    install_custom_tool "GF_PATTERNS" "true" "git clone https://github.com/rix4uni/gf-patterns.git --depth 1 ~/.gf &>/dev/null"
-}
-
 SUBDOG() {
     install_gocl_tool "SUBDOG" "subdog" "github.com/rix4uni/subdog"
 }
