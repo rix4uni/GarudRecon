@@ -873,7 +873,7 @@ WAYBACKURLS(){
 KATANA(){
 	START_SPINNER "${BGREEN}KATANA${RESET}"
 
-	timelimitx -t ${KATANA_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | katana -duc -silent -nc -ps -jc -kf -fx -xhr -concurrency ${KATANA_THREADS} -parallelism ${KATANA_PARALLELISM} -depth ${KATANA_DEPTH} -timeout ${KATANA_TIMEOUT} -retry ${KATANA_RETRY} -delay ${KATANA_DELAY} -rate-limit ${KATANA_RATELIMIT} -crawl-duration ${KATANA_CRAWLDURATION} | unew -el -i -t -q ${TMPDIR}/katana.urls"
+	timelimitx -t ${KATANA_TIMELIMITX} "cat ${TMPDIR}/alivesubs.txt | katana -duc -silent -nc -jc -concurrency ${KATANA_THREADS} -parallelism ${KATANA_PARALLELISM} -depth ${KATANA_DEPTH} -timeout ${KATANA_TIMEOUT} -retry ${KATANA_RETRY} -delay ${KATANA_DELAY} -rate-limit ${KATANA_RATELIMIT} -aff | unew -el -i -t -q ${TMPDIR}/katana.urls"
 
 	STOP_SPINNER
 	DISPLAYINFO "KATANA" "${TMPDIR}/katana.urls"

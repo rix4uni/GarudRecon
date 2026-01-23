@@ -520,7 +520,6 @@ PACKAGES() {
     apt --fix-broken install -y &>/dev/null
     dpkg --configure -a &>/dev/null
     apt update -y &>/dev/null
-    # apt upgrade -y &>/dev/null
     apt install -y autoconf automake libtool build-essential libssl-dev libpcre3-dev libpcap-dev dmidecode python3 libudev-dev gcc git curl dos2unix wget zip xsel jq npm chromium cmake poppler-utils parallel python3-shodan unzip ruby-dev zoxide &>/dev/null
     wget -q https://raw.githubusercontent.com/rix4uni/dotfiles/refs/heads/main/tmux/tmux-termius.conf -O ~/.tmux.conf
 
