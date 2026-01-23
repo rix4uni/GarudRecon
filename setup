@@ -66,21 +66,4 @@ NC='\033[0m' # No Color
 
 echo -e "\n${BOLD}${CYAN}==> System Info${NC}"
 echo -e "${YELLOW}Detected System RAM:${NC} ${GREEN}${TOTAL_RAM_GB} GB${NC}"
-echo -e "${YELLOW}Configuration file:${NC} ${GREEN}$CONFIG${NC} (auto-detects RAM and adjusts settings accordingly)\n"
-
-echo -e "\n${BOLD}${CYAN}==> API Keys Configuration${NC} ${YELLOW}(Optional but highly recommended)${NC}"
-echo -e "${GREEN}Add your API keys to:${NC} ${GREEN}$HOME/.config${NC}"
-
-echo -e "\n${BOLD}${CYAN}==> Restore from Backup (GitHub)${NC}"
-echo -e "${BLUE}git clone https://<TOKEN>@github.com/yourusername/private-config.git --depth 1${NC}"
-echo -e "${BLUE}cp -r private-config/* $HOME/.config && rm -rf private-config${NC}"
-
-echo -e "\n${BOLD}${CYAN}==> Zoxide Configuration${NC} ${YELLOW}(Optional but recommended)${NC}"
-echo -e "${GREEN}Add common directories to zoxide for faster navigation:${NC}"
-echo -e "${BLUE}zpath_add ~/.config ~/.garudrecon${NC}"
-
-echo -e "\n${BOLD}${RED}==> IMPORTANT: Blind XSS Configuration${NC} ${YELLOW}(Required and highly recommended)${NC}"
-echo -e "${RED}⚠ WARNING:${NC} ${YELLOW}If you don't configure bxssreplace, all blind XSS notifications will be sent to rix4uni!${NC}"
-echo -e "${GREEN}Replace 'myezxssuser' with your own bxss username:${NC}"
-echo -e "${BLUE}cat ~/.garudrecon/wordlists/favourite.txt | bxssreplace --silent --username myezxssuser | unew ~/.garudrecon/wordlists/favourite2.txt && rm -rf ~/.garudrecon/wordlists/favourite.txt && mv ~/.garudrecon/wordlists/favourite2.txt ~/.garudrecon/wordlists/favourite.txt${NC}\n"
-
+echo -e "${YELLOW}Configuration file:${NC} ${GREEN}$CONFIG${NC} (auto-detects RAM and adjusts settings accordingly)"
