@@ -521,8 +521,7 @@ PACKAGES() {
     dpkg --configure -a &>/dev/null
     apt update -y &>/dev/null
     # apt upgrade -y &>/dev/null
-    apt install -y autoconf automake libtool build-essential libssl-dev libpcre3-dev libpcap-dev rsync net-tools dmidecode python3 libudev-dev gcc git sshpass curl dos2unix wget zip xsel jq npm chromium cmake poppler-utils parallel cewl python3-shodan unzip ruby-dev zoxide tree &>/dev/null
-    gem install wpscan &>/dev/null
+    apt install -y autoconf automake libtool build-essential libssl-dev libpcre3-dev libpcap-dev dmidecode python3 libudev-dev gcc git curl dos2unix wget zip xsel jq npm chromium cmake poppler-utils parallel python3-shodan unzip ruby-dev zoxide &>/dev/null
     wget -q https://raw.githubusercontent.com/rix4uni/dotfiles/refs/heads/main/tmux/tmux-termius.conf -O ~/.tmux.conf
 
     STOP_SPINNER
@@ -653,16 +652,8 @@ TLDINFO() {
     install_pipx_tool "TLDINFO" "tldinfo" "--force git+https://github.com/rix4uni/tldinfo.git"
 }
 
-SUBWIZ() {
-    install_pipx_tool "SUBWIZ" "subwiz" "--force git+https://github.com/hadriansecurity/subwiz.git"
-}
-
 RECOLLAPSE() {
     install_pipx_tool "RECOLLAPSE" "recollapse" "--force git+https://github.com/0xacb/recollapse.git"
-}
-
-URO() {
-    install_pip3_tool "URO" "uro" "uro --no-cache-dir --break-system-packages"
 }
 
 X8() {
@@ -685,24 +676,8 @@ XNLINKFINDER() {
     install_pip3_tool "XNLINKFINDER" "xnLinkFinder" "xnLinkFinder --no-cache-dir --break-system-packages"
 }
 
-FEROXBUSTER() {
-    install_custom_tool "FEROXBUSTER" "feroxbuster" "wget -q https://github.com/epi052/feroxbuster/releases/download/v2.11.0/feroxbuster_amd64.deb.zip &>/dev/null && unzip -q feroxbuster_amd64.deb.zip && dpkg -i feroxbuster_2.11.0-1_amd64.deb &>/dev/null && rm -rf feroxbuster_amd64.deb.zip feroxbuster_2.11.0-1_amd64.deb"
-}
-
 ALTDNS() {
     install_pipx_tool "ALTDNS" "altdns" "--force git+https://github.com/infosec-au/altdns.git"
-}
-
-MASSCAN() {
-    install_custom_tool "MASSCAN" "masscan" "git clone https://github.com/robertdavidgraham/masscan.git --depth 1 &>/dev/null && cd masscan && make &>/dev/null && make install &>/dev/null && cd .. && rm -rf masscan"
-}
-
-MASSDNS() {
-    install_custom_tool "MASSDNS" "massdns" "git clone https://github.com/blechschmidt/massdns.git --depth 1 &>/dev/null && cd massdns && make &>/dev/null && make install &>/dev/null && cd .. && rm -rf massdns"
-}
-
-RUSTSCAN() {
-    install_custom_tool "RUSTSCAN" "rustscan" "wget -q https://github.com/RustScan/RustScan/releases/download/2.3.0/rustscan-2.3.0-x86_64-linux.zip && unzip -q rustscan-2.3.0-x86_64-linux.zip && chmod +x tmp/rustscan-2.3.0-x86_64-linux/rustscan && mv tmp/rustscan-2.3.0-x86_64-linux/rustscan /usr/bin/ && rm -rf rustscan-2.3.0-x86_64-linux.zip tmp"
 }
 
 GHAURI() {
@@ -741,10 +716,6 @@ SUBFINDER() {
     install_gocl_tool "SUBFINDER" "subfinder" "github.com/projectdiscovery/subfinder"
 }
 
-CVEMAP() {
-    install_gocl_tool "CVEMAP" "cvemap" "github.com/projectdiscovery/cvemap"
-}
-
 KATANA() {
     install_gocl_tool "KATANA" "katana" "github.com/projectdiscovery/katana"
 }
@@ -753,32 +724,8 @@ NAABU() {
     install_gocl_tool "NAABU" "naabu" "github.com/projectdiscovery/naabu"
 }
 
-NMAP() {
-    install_custom_tool "NMAP" "nmap" "git clone https://github.com/nmap/nmap.git --depth 1 &>/dev/null && cd nmap && ./configure &>/dev/null && make &>/dev/null && make install &>/dev/null && cd .. && rm -rf nmap"
-}
-
 MAPCIDR() {
     install_gocl_tool "MAPCIDR" "mapcidr" "github.com/projectdiscovery/mapcidr"
-}
-
-SHUFFLEDNS() {
-    install_gocl_tool "SHUFFLEDNS" "shuffledns" "github.com/projectdiscovery/shuffledns"
-}
-
-UNCOVER() {
-    install_gocl_tool "UNCOVER" "uncover" "github.com/projectdiscovery/uncover"
-}
-
-ASNMAP() {
-    install_gocl_tool "ASNMAP" "asnmap" "github.com/projectdiscovery/asnmap"
-}
-
-CDNCHECK() {
-    install_gocl_tool "CDNCHECK" "cdncheck" "github.com/projectdiscovery/cdncheck"
-}
-
-DNSX() {
-    install_gocl_tool "DNSX" "dnsx" "github.com/projectdiscovery/dnsx"
 }
 
 CHAOS() {
@@ -793,48 +740,12 @@ ALTERX() {
     install_gocl_tool "ALTERX" "alterx" "github.com/projectdiscovery/alterx"
 }
 
-TLSX() {
-    install_gocl_tool "TLSX" "tlsx" "github.com/projectdiscovery/tlsx"
-}
-
-INTERACTSH_CLIENT() {
-    install_gocl_tool "INTERACTSH_CLIENT" "interactsh-client" "github.com/projectdiscovery/interactsh" "-c \"cmd/interactsh-client\""
-}
-
 NOTIFY() {
     install_gocl_tool "NOTIFY" "notify" "github.com/projectdiscovery/notify"
 }
 
-HTTPROBE() {
-    install_gocl_tool "HTTPROBE" "httprobe" "github.com/tomnomnom/httprobe"
-}
-
-ASSETFINDER() {
-    install_gocl_tool "ASSETFINDER" "assetfinder" "github.com/tomnomnom/assetfinder"
-}
-
 WAYBACKURLS() {
     install_gocl_tool "WAYBACKURLS" "waybackurls" "github.com/tomnomnom/waybackurls"
-}
-
-FFF() {
-    install_gocl_tool "FFF" "fff" "github.com/tomnomnom/fff"
-}
-
-MEG() {
-    install_gocl_tool "MEG" "meg" "github.com/tomnomnom/meg"
-}
-
-ANEW() {
-    install_gocl_tool "ANEW" "anew" "github.com/tomnomnom/anew"
-}
-
-GRON() {
-    install_gocl_tool "GRON" "gron" "github.com/tomnomnom/gron"
-}
-
-UNFURL() {
-    install_gocl_tool "UNFURL" "unfurl" "github.com/tomnomnom/unfurl"
 }
 
 GF() {
@@ -845,16 +756,8 @@ GF_PATTERNS() {
     install_custom_tool "GF_PATTERNS" "true" "git clone https://github.com/rix4uni/gf-patterns.git --depth 1 ~/.gf &>/dev/null"
 }
 
-QSREPLACE() {
-    install_gocl_tool "QSREPLACE" "qsreplace" "github.com/tomnomnom/qsreplace"
-}
-
 SUBDOG() {
     install_gocl_tool "SUBDOG" "subdog" "github.com/rix4uni/subdog"
-}
-
-STOPPIRACY() {
-    install_gocl_tool "STOPPIRACY" "stoppiracy" "github.com/rix4uni/stoppiracy"
 }
 
 OOSEXCLUDE() {
@@ -865,18 +768,6 @@ EMAILEXTRACTOR() {
     install_gocl_tool "EMAILEXTRACTOR" "emailextractor" "github.com/rix4uni/emailextractor"
 }
 
-NSFWDETECTOR() {
-    install_gocl_tool "NSFWDETECTOR" "nsfwdetector" "github.com/rix4uni/nsfwdetector"
-}
-
-QUERYGEN() {
-    install_gocl_tool "QUERYGEN" "querygen" "github.com/rix4uni/querygen"
-}
-
-HAKTRAILSFREE() {
-    install_gocl_tool "HAKTRAILSFREE" "haktrailsfree" "github.com/rix4uni/haktrailsfree"
-}
-
 ORG2ASN() {
     install_gocl_tool "ORG2ASN" "org2asn" "github.com/rix4uni/org2asn"
 }
@@ -885,36 +776,16 @@ VULNTECHFINDER() {
     install_gocl_tool "VULNTECHFINDER" "vulntechfinder" "github.com/rix4uni/vulntechfinder"
 }
 
-SFTPSENDER() {
-    install_gocl_tool "SFTPSENDER" "sftpsender" "github.com/rix4uni/sftpsender"
-}
-
-WORDCOUNT() {
-    install_gocl_tool "WORDCOUNT" "wordcount" "github.com/rix4uni/wordcount"
-}
-
 WHOXYSUBS() {
     install_gocl_tool "WHOXYSUBS" "whoxysubs" "github.com/rix4uni/whoxysubs"
-}
-
-UDON() {
-    install_gocl_tool "UDON" "udon" "github.com/dhn/udon"
 }
 
 TECHFINDER() {
     install_gocl_tool "TECHFINDER" "techfinder" "github.com/rix4uni/techfinder"
 }
 
-IP2ORG() {
-    install_gocl_tool "IP2ORG" "ip2org" "github.com/rix4uni/ip2org"
-}
-
 CERTINFO() {
     install_gocl_tool "CERTINFO" "certinfo" "github.com/rix4uni/certinfo"
-}
-
-XSSCHECKER() {
-    install_gocl_tool "XSSCHECKER" "xsschecker" "github.com/rix4uni/xsschecker"
 }
 
 XSSRECON() {
@@ -925,10 +796,6 @@ GOSQLI() {
     install_gocl_tool "GOSQLI" "gosqli" "github.com/rix4uni/gosqli"
 }
 
-PORTMAP() {
-    install_gocl_tool "PORTMAP" "portmap" "github.com/rix4uni/portmap"
-}
-
 TLDSCAN() {
     install_gocl_tool "TLDSCAN" "tldscan" "github.com/rix4uni/tldscan"
 }
@@ -937,20 +804,8 @@ PARAMFINDER() {
     install_gocl_tool "PARAMFINDER" "paramfinder" "github.com/rix4uni/paramfinder"
 }
 
-GXSS() {
-    install_gocl_tool "GXSS" "Gxss" "github.com/rix4uni/Gxss"
-}
-
 MSARJUN() {
     install_gocl_tool "MSARJUN" "msarjun" "github.com/rix4uni/msarjun"
-}
-
-SOCIALFINDER() {
-    install_gocl_tool "SOCIALFINDER" "socialfinder" "github.com/rix4uni/socialfinder"
-}
-
-WAYBACKURLSX() {
-    install_gocl_tool "WAYBACKURLSX" "waybackurlsx" "github.com/rix4uni/waybackurlsx"
 }
 
 ORIGINIPHUNTER() {
@@ -961,40 +816,8 @@ HAKRAWLER() {
     install_gocl_tool "HAKRAWLER" "hakrawler" "github.com/hakluke/hakrawler"
 }
 
-HAKREVDNS() {
-    install_gocl_tool "HAKREVDNS" "hakrevdns" "github.com/hakluke/hakrevdns"
-}
-
-HAKLISTGEN() {
-    install_gocl_tool "HAKLISTGEN" "haklistgen" "github.com/hakluke/haklistgen"
-}
-
-HAKORIGINFINDER() {
-    install_gocl_tool "HAKORIGINFINDER" "hakoriginfinder" "github.com/hakluke/hakoriginfinder"
-}
-
-HAKCHECKURL() {
-    install_gocl_tool "HAKCHECKURL" "hakcheckurl" "github.com/hakluke/hakcheckurl"
-}
-
-HAKTRAILS() {
-    install_gocl_tool "HAKTRAILS" "haktrails" "github.com/hakluke/haktrails"
-}
-
-HAKIP2HOST() {
-    install_gocl_tool "HAKIP2HOST" "hakip2host" "github.com/hakluke/hakip2host"
-}
-
 FFUF() {
     install_gocl_tool "FFUF" "ffuf" "github.com/ffuf/ffuf"
-}
-
-DIRSEARCH() {
-    install_pipx_tool "DIRSEARCH" "dirsearch" "--force git+https://github.com/maurosoria/dirsearch.git"
-}
-
-GOWITNESS() {
-    install_gocl_tool "GOWITNESS" "gowitness" "github.com/sensepost/gowitness"
 }
 
 GITHUB_SUBDOMAINS() {
@@ -1021,28 +844,12 @@ GOSPIDER() {
     install_gocl_tool "GOSPIDER" "gospider" "github.com/jaeles-project/gospider"
 }
 
-JAELES() {
-    install_gocl_tool "JAELES" "jaeles" "github.com/jaeles-project/jaeles"
-}
-
-GETJS() {
-    install_gocl_tool "GETJS" "getJS" "github.com/003random/getJS"
-}
-
 JSLUICE() {
     install_gocl_tool "JSLUICE" "jsluice" "github.com/BishopFox/jsluice"
 }
 
 SHORTSCAN() {
-    install_gocl_tool "SHORTSCAN" "shortscan" "github.com/bitquark/shortscan"
-}
-
-GUNGNIR() {
-    install_gocl_tool "GUNGNIR" "gungnir" "github.com/g0ldencybersec/gungnir"
-}
-
-SNS() {
-    install_gocl_tool "SNS" "sns" "github.com/sw33tLie/sns"
+    install_gocl_tool "SHORTSCAN" "shortscan" "github.com/rix4uni/shortscan"
 }
 
 PUREDNS() {
@@ -1053,56 +860,12 @@ DMUT() {
     install_gocl_tool "DMUT" "dmut" "github.com/bp0lr/dmut"
 }
 
-GOBUSTER() {
-    install_gocl_tool "GOBUSTER" "gobuster" "github.com/OJ/gobuster"
-}
-
-SMAP() {
-    install_gocl_tool "SMAP" "smap" "github.com/s0md3v/smap"
-}
-
-DALFOX() {
-    install_gocl_tool "DALFOX" "dalfox" "github.com/hahwul/dalfox"
-}
-
-CERO() {
-    install_gocl_tool "CERO" "cero" "github.com/glebarez/cero"
-}
-
 GOTATOR() {
     install_gocl_tool "GOTATOR" "gotator" "github.com/Josue87/gotator"
 }
 
-ANALYTICSRELATIONSHIPS() {
-    install_gocl_tool "ANALYTICSRELATIONSHIPS" "analyticsrelationships" "github.com/Josue87/analyticsrelationships"
-}
-
-MANTRA() {
-    install_gocl_tool "MANTRA" "mantra" "github.com/MrEmpy/mantra"
-}
-
-CRT() {
-    install_gocl_tool "CRT" "crt" "github.com/cemulus/crt"
-}
-
-URLGRAB() {
-    install_gocl_tool "URLGRAB" "urlgrab" "github.com/iamstoxe/urlgrab"
-}
-
 GOLINKFINDER() {
     install_gocl_tool "GOLINKFINDER" "GoLinkFinder" "github.com/rix4uni/GoLinkFinder"
-}
-
-LINX() {
-    install_gocl_tool "LINX" "linx" "github.com/riza/linx"
-}
-
-KXSS() {
-    install_gocl_tool "KXSS" "kxss" "github.com/Emoe/kxss"
-}
-
-GALER() {
-    install_gocl_tool "GALER" "galer" "github.com/dwisiswant0/galer"
 }
 
 JSFINDER() {
@@ -1115,18 +878,6 @@ PATHFINDER() {
 
 TRUFFLEHOG() {
     install_custom_tool "TRUFFLEHOG" "trufflehog" "wget -q https://github.com/trufflesecurity/trufflehog/releases/download/v3.91.1/trufflehog_3.91.1_linux_amd64.tar.gz && tar -xzf trufflehog_3.91.1_linux_amd64.tar.gz &>/dev/null && mv trufflehog ~/go/bin/ && rm -rf trufflehog_3.91.1_linux_amd64.tar.gz"
-}
-
-JSHUNTER() {
-    install_gocl_tool "JSHUNTER" "jshunter" "github.com/cc1a2b/JShunter"
-}
-
-PPFUZZ() {
-    install_custom_tool "PPFUZZ" "ppfuzz" "wget -q https://github.com/dwisiswant0/ppfuzz/releases/download/v1.0.2/ppfuzz-v1.0.2-x86_64-unknown-linux-musl.tar.gz && tar -xzf ppfuzz-v1.0.2-x86_64-unknown-linux-musl.tar.gz &>/dev/null && mv ppfuzz /usr/local/bin/ && rm -rf ppfuzz-v1.0.2-x86_64-unknown-linux-musl.tar.gz"
-}
-
-BRUTESPRAY() {
-    install_gocl_tool "BRUTESPRAY" "brutespray" "github.com/x90skysn3k/brutespray"
 }
 
 LINKINSPECTOR() {
@@ -1145,24 +896,12 @@ PYXSS() {
     install_pipx_tool "PYXSS" "pyxss" "--force git+https://github.com/rix4uni/pyxss.git"
 }
 
-PLER() {
-    install_pip3_tool "PLER" "pler" "python-pler --no-cache-dir --break-system-packages"
-}
-
 ARINRANGE() {
     install_pipx_tool "ARINRANGE" "arinrange" "--force git+https://github.com/rix4uni/arinrange.git"
 }
 
 BUILTWITHSUBS() {
     install_pipx_tool "BUILTWITHSUBS" "builtwithsubs" "--force git+https://github.com/rix4uni/builtwithsubs.git"
-}
-
-TELEBACKUP() {
-    install_pipx_tool "TELEBACKUP" "telebackup" "--force git+https://github.com/rix4uni/telebackup.git"
-}
-
-BBPSCRAPER() {
-    install_gocl_tool "BBPSCRAPER" "bbpscraper" "github.com/rix4uni/bbpscraper"
 }
 
 GOOP() {
@@ -1177,24 +916,8 @@ PVREPLACE() {
     install_gocl_tool "PVREPLACE" "pvreplace" "github.com/rix4uni/pvreplace"
 }
 
-SSB() {
-    install_gocl_tool "SSB" "ssb" "github.com/pwnesia/ssb"
-}
-
 FTPX() {
     install_gocl_tool "FTPX" "ftpx" "github.com/rix4uni/ftpx"
-}
-
-DNSTAKE() {
-    install_gocl_tool "DNSTAKE" "dnstake" "github.com/pwnesia/dnstake"
-}
-
-MX_TAKEOVER() {
-    install_gocl_tool "MX_TAKEOVER" "mx-takeover" "github.com/musana/mx-takeover"
-}
-
-SUBZY() {
-    install_gocl_tool "SUBZY" "subzy" "github.com/rix4uni/subzy"
 }
 
 URLDEDUPE() {
@@ -1213,16 +936,8 @@ JSCRAWLER() {
     install_gocl_tool "JSCRAWLER" "jscrawler" "github.com/rix4uni/jscrawler"
 }
 
-GORKER() {
-    install_pipx_tool "GORKER" "gorker" "--force git+https://github.com/rix4uni/gorker.git"
-}
-
 ROBOTXT() {
     install_gocl_tool "ROBOTXT" "robotxt" "github.com/rix4uni/robotxt"
-}
-
-ROBOXTRACTOR() {
-    install_gocl_tool "ROBOXTRACTOR" "roboxtractor" "github.com/Josue87/roboxtractor"
 }
 
 PATHCRAWLER() {
@@ -1257,14 +972,6 @@ UFORALL() {
     install_gocl_tool "UFORALL" "uforall" "github.com/rix4uni/uforall"
 }
 
-EMAILFINDER() {
-    install_gocl_tool "EMAILFINDER" "emailfinder" "github.com/rix4uni/emailfinder"
-}
-
-FAVIRECON() {
-    install_gocl_tool "FAVIRECON" "favirecon" "github.com/edoardottt/favirecon"
-}
-
 FAVINFO() {
     install_gocl_tool "FAVINFO" "favinfo" "github.com/rix4uni/favinfo"
 }
@@ -1285,32 +992,12 @@ CSPFINDER() {
     install_gocl_tool "CSPFINDER" "cspfinder" "github.com/rix4uni/cspfinder"
 }
 
-DIRLESS() {
-    install_gocl_tool "DIRLESS" "dirless" "github.com/rix4uni/dirless"
-}
-
-CSPRECON() {
-    install_gocl_tool "CSPRECON" "csprecon" "github.com/edoardottt/csprecon"
-}
-
-GITXPOSE() {
-    install_gocl_tool "GITXPOSE" "gitxpose" "github.com/rix4uni/gitxpose"
-}
-
 BXSSREPLACE() {
     install_gocl_tool "BXSSREPLACE" "bxssreplace" "github.com/rix4uni/bxssreplace"
 }
 
 S3SCANNER() {
     install_custom_tool "S3SCANNER" "s3scanner" "go install -v github.com/sa7mon/s3scanner@latest &>/dev/null"
-}
-
-SPK() {
-    install_gocl_tool "SPK" "spk" "github.com/dhn/spk"
-}
-
-RIPGEN() {
-    install_custom_tool "RIPGEN" "ripgen" "cargo install ripgen &>/dev/null"
 }
 
 GOALTDNS() {
@@ -1333,9 +1020,9 @@ IPFINDER() {
 #     install_pip3_tool "XXER" "xxer" "xxer --no-cache-dir --break-system-packages"
 # }
 
-XSRFPROBE() {
-    install_pip3_tool "XSRFPROBE" "xsrfprobe" "xsrfprobe --no-cache-dir --break-system-packages"
-}
+# XSRFPROBE() {
+#     install_pip3_tool "XSRFPROBE" "xsrfprobe" "xsrfprobe --no-cache-dir --break-system-packages"
+# }
 
 # CSRF_SCANNER() {
 #     install_pip3_tool "CSRF_SCANNER" "csrf-scanner" "csrf-scanner --no-cache-dir --break-system-packages"
@@ -1389,9 +1076,9 @@ XSRFPROBE() {
 #     install_custom_tool "YSOSERIAL" "ysoserial" "wget -q https://github.com/rix4uni/ysoserial/releases/download/v0.0.8-20220404-155839b/ysoserial-all.jar -O /opt/ysoserial.jar && echo -e '#!/usr/bin/env bash\\nexec java -jar /opt/ysoserial.jar \"\$@\"' | sudo tee /usr/local/bin/ysoserial &>/dev/null && sudo chmod +x /usr/local/bin/ysoserial"
 # }
 
-PPMAP() {
-    install_go_tool "PPMAP" "ppmap" "github.com/kleiton0x00/ppmap@latest"
-}
+# PPMAP() {
+#     install_go_tool "PPMAP" "ppmap" "github.com/kleiton0x00/ppmap@latest"
+# }
 
 # SMUGGLER() {
 #     START_SPINNER "${BGREEN}SMUGGLER${RESET}"
@@ -1409,25 +1096,25 @@ PPMAP() {
 #     fi
 # }
 
-NOMORE403() {
-    install_gocl_tool "NOMORE403" "nomore403" "github.com/devploit/nomore403"
-}
+# NOMORE403() {
+#     install_gocl_tool "NOMORE403" "nomore403" "github.com/devploit/nomore403"
+# }
 
-WEB_CACHE_VULNERABILITY_SCANNER() {
-    START_SPINNER "${BGREEN}WEB_CACHE_VULNERABILITY_SCANNER${RESET}"
+# WEB_CACHE_VULNERABILITY_SCANNER() {
+#     START_SPINNER "${BGREEN}WEB_CACHE_VULNERABILITY_SCANNER${RESET}"
     
-    mkdir -p tools
-    git clone https://github.com/Hackmanit/Web-Cache-Vulnerability-Scanner.git --depth 1 tools/Web-Cache-Vulnerability-Scanner &>/dev/null
-    cd tools/Web-Cache-Vulnerability-Scanner && go build -o Web-Cache-Vulnerability-Scanner &>/dev/null && chmod +x Web-Cache-Vulnerability-Scanner && cd - &>/dev/null
+#     mkdir -p tools
+#     git clone https://github.com/Hackmanit/Web-Cache-Vulnerability-Scanner.git --depth 1 tools/Web-Cache-Vulnerability-Scanner &>/dev/null
+#     cd tools/Web-Cache-Vulnerability-Scanner && go build -o Web-Cache-Vulnerability-Scanner &>/dev/null && chmod +x Web-Cache-Vulnerability-Scanner && cd - &>/dev/null
     
-    if [[ -f "tools/Web-Cache-Vulnerability-Scanner/Web-Cache-Vulnerability-Scanner" ]] && [[ -x "tools/Web-Cache-Vulnerability-Scanner/Web-Cache-Vulnerability-Scanner" ]]; then
-        STOP_SPINNER
-        log_message "${BGREEN}[+] WEB_CACHE_VULNERABILITY_SCANNER - INSTALLED${RESET}: ${TIME} seconds"
-    else
-        STOP_SPINNER
-        log_message "${BRED}[x] WEB_CACHE_VULNERABILITY_SCANNER - INSTALLATION FAILED${RESET}: ${TIME} seconds"
-    fi
-}
+#     if [[ -f "tools/Web-Cache-Vulnerability-Scanner/Web-Cache-Vulnerability-Scanner" ]] && [[ -x "tools/Web-Cache-Vulnerability-Scanner/Web-Cache-Vulnerability-Scanner" ]]; then
+#         STOP_SPINNER
+#         log_message "${BGREEN}[+] WEB_CACHE_VULNERABILITY_SCANNER - INSTALLED${RESET}: ${TIME} seconds"
+#     else
+#         STOP_SPINNER
+#         log_message "${BRED}[x] WEB_CACHE_VULNERABILITY_SCANNER - INSTALLATION FAILED${RESET}: ${TIME} seconds"
+#     fi
+# }
 
 
 # CONFIGS
@@ -1441,21 +1128,6 @@ CONFIGS() {
 
     STOP_SPINNER
     log_message "${BGREEN}[+] CONFIGS - INSTALLED${RESET}: ${TIME} seconds"
-}
-
-
-# SOME DATA
-TRICKESTCLOUD() {
-    START_SPINNER "${BGREEN}TRICKESTCLOUD${RESET}"
-    wget -q -O $WORDLIST_BASEDIR/trickestcloud.zip https://github.com/trickest/cloud/archive/refs/heads/main.zip
-    unzip -q $WORDLIST_BASEDIR/trickestcloud.zip -d $WORDLIST_BASEDIR
-    mv $WORDLIST_BASEDIR/cloud-main $WORDLIST_BASEDIR/trickestcloud
-    cat $WORDLIST_BASEDIR/trickestcloud/ssl/ssl*.csv | cut -d"," -f2,7 | tr "|" "\n" | tr "," "\n" | sed 's/"//g' | unew -el -i -t -q $WORDLIST_BASEDIR/trickestcloud_ssl.txt
-
-    rm -rf $WORDLIST_BASEDIR/trickestcloud.zip $WORDLIST_BASEDIR/trickestcloud
-
-    STOP_SPINNER
-    log_message "${BGREEN}[+] TRICKESTCLOUD - INSTALLED${RESET}: ${TIME} seconds"
 }
 
 
@@ -1528,19 +1200,13 @@ ALL(){
     GOBUILD
     ARJUN
     TLDINFO
-    SUBWIZ
     RECOLLAPSE
-    URO
     X8
     FINDOMAIN
     BBOT
     WAYMORE
     XNLINKFINDER
-    FEROXBUSTER
     ALTDNS
-    MASSCAN
-    MASSDNS
-    RUSTSCAN
     GHAURI
     SQLMAP
     INTERLACE
@@ -1550,127 +1216,62 @@ ALL(){
     NUCLEI
     NUCLEI_TEMPLATE
     SUBFINDER
-    CVEMAP
     KATANA
     NAABU
-    NMAP
     MAPCIDR
-    SHUFFLEDNS
-    UNCOVER
-    ASNMAP
-    CDNCHECK
-    DNSX
     CHAOS
     TLDFINDER
     ALTERX
-    TLSX
-    INTERACTSH_CLIENT
     NOTIFY
-    HTTPROBE
-    ASSETFINDER
     WAYBACKURLS
-    FFF
-    MEG
-    ANEW
-    GRON
-    UNFURL
     GF
     GF_PATTERNS
-    QSREPLACE
     SUBDOG
-    STOPPIRACY
     OOSEXCLUDE
     EMAILEXTRACTOR
-    NSFWDETECTOR
-    QUERYGEN
-    HAKTRAILSFREE
     ORG2ASN
-    SFTPSENDER
     VULNTECHFINDER
-    WORDCOUNT
     WHOXYSUBS
-    UDON
     TECHFINDER
-    IP2ORG
     CERTINFO
-    XSSCHECKER
     XSSRECON
     GOSQLI
-    PORTMAP
     TLDSCAN
     PARAMFINDER
-    GXSS
     MSARJUN
-    SOCIALFINDER
-    WAYBACKURLSX
     ORIGINIPHUNTER
     HAKRAWLER
-    HAKREVDNS
-    HAKLISTGEN
-    HAKORIGINFINDER
-    HAKCHECKURL
-    HAKTRAILS
-    HAKIP2HOST
     FFUF
-    DIRSEARCH
-    GOWITNESS
     GITHUB_SUBDOMAINS
     AMASS
     SHOSUBGO
     GAU
     SUBJS
     GOSPIDER
-    JAELES
-    GETJS
     JSLUICE
     SHORTSCAN
-    GUNGNIR
-    SNS
     PUREDNS
     DMUT
-    GOBUSTER
-    SMAP
-    DALFOX
-    CERO
     GOTATOR
-    ANALYTICSRELATIONSHIPS
-    MANTRA
-    CRT
-    URLGRAB
     GOLINKFINDER
-    LINX
-    KXSS
-    GALER
     JSFINDER
     PATHFINDER
     TRUFFLEHOG
-    JSHUNTER
-    PPFUZZ
-    BRUTESPRAY
     LINKINSPECTOR
     WORDGEN
     FUZZULI
     PYXSS
-    PLER
     ARINRANGE
     BUILTWITHSUBS
-    TELEBACKUP
-    BBPSCRAPER
     GOOP
     COMMIX
     PVREPLACE
-    SSB
     FTPX
-    DNSTAKE
-    MX_TAKEOVER
-    SUBZY
     URLDEDUPE
     TIMELIMITX
     SOURCEMAPPER
     JSCRAWLER
-    GORKER
     ROBOTXT
-    ROBOXTRACTOR
     PATHCRAWLER
     CRAWLEY
     XCRAWL3R
@@ -1679,26 +1280,19 @@ ALL(){
     URLFINDER
     CARIDDI
     UFORALL
-    EMAILFINDER
-    FAVIRECON
     FAVINFO
     DLEVEL
     SUBDOMAINFUZZ
     GOURLEX
     CSPFINDER
-    DIRLESS
-    CSPRECON
-    GITXPOSE
     BXSSREPLACE
     S3SCANNER
-    SPK
-    RIPGEN
     GOALTDNS
     DNSGEN
     IPFINDER
     # XXEINJECTOR
     # XXER
-    XSRFPROBE
+    # XSRFPROBE
     # CSRF_SCANNER
     # CORSY
     # CORS_SCANNER
@@ -1712,12 +1306,11 @@ ALL(){
     # DOTDOTPWN
     # NOSQLMAP
     # YSOSERIAL
-    PPMAP
+    # PPMAP
     # SMUGGLER
-    NOMORE403
-    WEB_CACHE_VULNERABILITY_SCANNER
+    # NOMORE403
+    # WEB_CACHE_VULNERABILITY_SCANNER
     CONFIGS
-    TRICKESTCLOUD
     WORDLISTS
 }
 

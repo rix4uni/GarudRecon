@@ -46,7 +46,7 @@ sed -i -e 's|WORDLIST_BASEDIR="wordlists"|WORDLIST_BASEDIR="$HOME/.garudrecon/wo
 sed -i -e 's|MODULES_DIR="workflow"|MODULES_DIR="$HOME/.garudrecon/workflow"|' $HOME/.garudrecon/cmd/workflow
 
 # Run the installation command - always install ALL tools
-garudrecon install -f ALL
+garudrecon install -f ALL --no-binary
 
 # send config files (if .config directory exists)
 if [[ -d ".config" ]]; then
