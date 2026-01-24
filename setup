@@ -48,13 +48,6 @@ sed -i -e 's|MODULES_DIR="workflow"|MODULES_DIR="$HOME/.garudrecon/workflow"|' $
 # Run the installation command - always install ALL tools
 garudrecon install -f ALL --no-binary
 
-# send config files (if .config directory exists)
-if [[ -d ".config" ]]; then
-    mkdir -p $HOME/.config
-    cp -r .config/* $HOME/.config 2>/dev/null || true
-fi
-
-
 # Define colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
