@@ -846,7 +846,7 @@ EMAILEXTRACTOR(){
 WAYMORE(){
 	START_SPINNER "${BGREEN}WAYMORE${RESET}"
 
-	timelimitx -t ${WAYMORE_TIMELIMITX} "echo ${TARGET} | waymore -mode U -lr 3 -lcc 3 -f >/dev/null 2>&1 | unew -el -i -t -q ${TMPDIR}/waymore.urls"
+	timelimitx -t ${WAYMORE_TIMELIMITX} "echo ${TARGET} | waymore -mode U -lr 3 -lcc 3 -f --stream | unew -el -i -t -q ${TMPDIR}/waymore.urls"
 
 	STOP_SPINNER
 	DISPLAYINFO "WAYMORE" "${TMPDIR}/waymore.urls"

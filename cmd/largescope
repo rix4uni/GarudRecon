@@ -1557,7 +1557,7 @@ EMAILFINDER(){
 WAYMORE(){
 	START_SPINNER "${BGREEN}WAYMORE${RESET}"
 
-	timelimitx -t ${WAYMORE_TIMELIMITX} "echo ${TARGET} | waymore -mode U -lr 3 -lcc 3 -f 2>/dev/null | unew -el -i -t -q ${URLSDIR}/waymore.urls"
+	timelimitx -t ${WAYMORE_TIMELIMITX} "echo ${TARGET} | waymore -mode U -lr 3 -lcc 3 -f --stream | unew -el -i -t -q ${URLSDIR}/waymore.urls"
 
 	# Reuse old scanned data
 	cat ${BASEDIR}/${TARGET}*/.tmp/urls/waymore.urls 2>/dev/null | unew -el -i -t -q ${URLSDIR}/waymore.urls
